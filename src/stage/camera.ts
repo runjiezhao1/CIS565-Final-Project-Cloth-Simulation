@@ -1,4 +1,5 @@
 import { mat4, vec3 } from 'gl-matrix';
+import { toRadians } from '../math_utils';
 
 export class Camera {
     position: vec3;
@@ -10,6 +11,9 @@ export class Camera {
     far: number;
     projectionMatrix: mat4;
     viewMatrix: mat4;
+    yaw: number;
+    pitch: number;
+    sensitivity: number;
 
     constructor(
         aspectRatio: number,
@@ -29,6 +33,10 @@ export class Camera {
         this.projectionMatrix = mat4.create();
         this.viewMatrix = mat4.create();
 
+        this.yaw = -90; 
+        this.pitch = 0;
+        this.sensitivity = 0.1;
+
         this.updateProjectionMatrix();
         this.updateViewMatrix();
     }
@@ -38,6 +46,14 @@ export class Camera {
     }
 
     updateViewMatrix() {
+        const front = vec3.create();
+        front[0] = Math.cos(toRadians(this.yaw)) * Math.cos(toRadians(this.pitch));
+        front[1] = Math.sin(toRadians(this.pitch));
+        front[2] = Math.sin(toRadians(this.yaw)) * Math.cos(toRadians(this.pitch));
+
+        vec3.normalize(front, front);
+        vec3.add(this.target, this.position, front);
+
         mat4.lookAt(this.viewMatrix, this.position, this.target, this.up);
     }
 
@@ -65,6 +81,16 @@ export class Camera {
         vec3.scale(up, up, amount);
         vec3.add(this.position, this.position, up);
         vec3.add(this.target, this.target, up);
+        this.updateViewMatrix();
+    }
+
+    look(deltaX: number, deltaY: number) {
+        this.yaw += deltaX * this.sensitivity;
+        this.pitch += deltaY * this.sensitivity;
+
+        if (this.pitch > 89.0) this.pitch = 89.0;
+        if (this.pitch < -89.0) this.pitch = -89.0;
+
         this.updateViewMatrix();
     }
 }

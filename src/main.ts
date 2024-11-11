@@ -137,8 +137,29 @@ const main = async() => {
         render(); // Re-render the scene after updating the camera position
     }
 
+    function handleMouseMove(event: MouseEvent) {
+        const deltaX = event.movementX;
+        const deltaY = -event.movementY; // Invert Y-axis to feel natural
+        camera.look(deltaX, deltaY);
+        render();
+    }
+
     // Set up event listener for keyboard input
     window.addEventListener('keydown', handleKeyDown);
+    
+    // Lock pointer to enable mouse control
+    canvas.addEventListener('click', () => {
+        canvas.requestPointerLock();
+    });
+
+    // Set up event listener for pointer lock and mouse movement
+    document.addEventListener('pointerlockchange', () => {
+        if (document.pointerLockElement === canvas) {
+            document.addEventListener('mousemove', handleMouseMove);
+        } else {
+            document.removeEventListener('mousemove', handleMouseMove);
+        }
+    });
 
     render(); // Initial render
 }
