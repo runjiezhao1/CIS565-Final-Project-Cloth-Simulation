@@ -1,9 +1,24 @@
 import { cubeSrc } from "./shaders/shader";
 import { TriangleMesh } from "./triangle_mesh";
 import { CubeMesh } from "./cube_mesh";
-import {Camera} from "./stage/camera";
+import { Camera } from "./stage/camera";
+import { GUIController } from "./gui/gui";
+import Stats from 'stats-js';
 
 const main = async() => {
+    
+    // Initial display for framerate
+    const stats = Stats();
+    stats.setMode(0);
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.left = '0px';
+    stats.domElement.style.top = '0px';
+    document.body.appendChild(stats.domElement);
+    
+    // Initialize GUI Controller
+    const guiController = new GUIController();
+
+    // Canvas setting
     const canvas : HTMLCanvasElement = <HTMLCanvasElement> document.getElementById("canvas-webgpu");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -86,7 +101,14 @@ const main = async() => {
         layout: pipelineLayout
     });
 
+    
+    // This function will be updated every frame
     function render() {
+        // FPS detector
+        stats.begin();
+        // GUI controller
+        const backgroundColor = guiController.settings.backgroundColor;
+
         camera.updateViewMatrix();
         uniformData.set(camera.viewMatrix, 16);
         device.queue.writeBuffer(uniformBuffer, 0, uniformData.buffer, uniformData.byteOffset, uniformData.byteLength);
@@ -100,7 +122,12 @@ const main = async() => {
         const renderpass : GPURenderPassEncoder = commandEncoder.beginRenderPass({
             colorAttachments: [{
                 view: textureView,
-                clearValue: {r: 0.5, g: 0.0, b: 0.25, a: 1.0},
+                clearValue: {
+                    r: backgroundColor[0] / 255,
+                    g: backgroundColor[1] / 255,
+                    b: backgroundColor[2] / 255,
+                    a: 1.0
+                },
                 loadOp: "clear",
                 storeOp: "store"
             }]
@@ -111,37 +138,40 @@ const main = async() => {
         renderpass.draw(3, 1, 0, 0);
         renderpass.end();
         device.queue.submit([commandEncoder.finish()]);
+
+        stats.end();
+        // Request the next frame
+        requestAnimationFrame(render);
     }
 
     function handleKeyDown(event: KeyboardEvent) {
+        const cameraSpeed = guiController.settings.cameraSpeed;
         switch (event.key) {
             case 'w': // Move forward
-                camera.moveForward(0.1);
+                camera.moveForward(0.1 * cameraSpeed);
                 break;
             case 's': // Move backward
-                camera.moveForward(-0.1);
+                camera.moveForward(-0.1 * cameraSpeed);
                 break;
             case 'a': // Move left
-                camera.moveRight(-0.1);
+                camera.moveRight(-0.1 * cameraSpeed);
                 break;
             case 'd': // Move right
-                camera.moveRight(0.1);
+                camera.moveRight(0.1 * cameraSpeed);
                 break;
             case 'q': // Move up
-                camera.moveUp(0.1);
+                camera.moveUp(0.1 * cameraSpeed);
                 break;
             case 'e': // Move down
-                camera.moveUp(-0.1);
+                camera.moveUp(-0.1 * cameraSpeed);
                 break;
         }
-        render(); // Re-render the scene after updating the camera position
     }
 
     function handleMouseMove(event: MouseEvent) {
         const deltaX = event.movementX;
         const deltaY = -event.movementY; // Invert Y-axis to feel natural
         camera.look(deltaX, deltaY);
-        render();
     }
 
     // Set up event listener for keyboard input
@@ -161,7 +191,8 @@ const main = async() => {
         }
     });
 
-    render(); // Initial render
+    // start the initial render frame
+    render();
 }
 
 main();
