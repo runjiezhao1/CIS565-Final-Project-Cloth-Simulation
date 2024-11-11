@@ -1,0 +1,25 @@
+{
+  "name": "cis5650-Cloth-Simulation-Final-Project",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --open",
+    "build": "vite build && cp -r scenes/ dist/"
+  },
+  "devDependencies": {
+    "@types/dat.gui": "^0.7.13",
+    "@types/seedrandom": "^3.0.8",
+    "@types/stats.js": "^0.17.3",
+    "@webgpu/types": "^0.1.51",
+    "typescript": "^5.2.2",
+    "vite": "^5.3.4"
+  },
+  "dependencies": {
+    "@loaders.gl/gltf": "^4.2.2",
+    "@loaders.gl/images": "^4.2.3",
+    "dat.gui": "^0.7.9",
+    "stats.js": "^0.17.0",
+    "wgpu-matrix": "^3.0.2"
+  }
+}
