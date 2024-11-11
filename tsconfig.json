@@ -21,8 +21,8 @@
     "noFallthroughCasesInSwitch": true,
 
     /* types */
-    "types": ["@webgpu/types", "vite/client"],
-    "typeRoots":["./node_modules/@webgpu/types","./node_modules/@types"]
+    "types": ["@webgpu/types", "vite/client"]
+    /*"typeRoots":["./node_modules/@webgpu/types","./node_modules/@types"]*/
   },
   "include": ["src"]
 }
