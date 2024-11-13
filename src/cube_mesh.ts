@@ -1,4 +1,5 @@
 import { vec3 } from "wgpu-matrix";
+import { parseOBJ } from "./utils";
 
 export class CubeMesh {
     canvas : HTMLCanvasElement = <HTMLCanvasElement> document.getElementById("canvas-webgpu");
@@ -139,7 +140,7 @@ export class CubeMesh {
         pos1 = vec3.add(vec3.mulScalar(vel1, deltaTime * 0.00001), pos1);
         pos2 = vec3.add(vec3.mulScalar(vel2, deltaTime * 0.00001), pos2);
         pos3 = vec3.add(vec3.mulScalar(vel3, deltaTime * 0.00001), pos3);
-        console.log(this.vertices);
+        //console.log(this.vertices);
         if(pos1[1] >= -100){
             this.vertices[0] = pos1[0];
             this.vertices[1] = pos1[1];
