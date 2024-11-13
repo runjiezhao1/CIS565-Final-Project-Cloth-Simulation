@@ -4,6 +4,7 @@
 import commonRaw from './common.wgsl?raw';
 
 import cubeDraw from './cube.wgsl?raw';
+import objRaw from './obj.wgsl?raw';
 
 
 function evalShaderRaw(raw: string) {
@@ -17,3 +18,4 @@ function processShaderRaw(raw: string) {
 }
 
 export const cubeSrc: string = processShaderRaw(cubeDraw);
+export const objSrc: string = processShaderRaw(objRaw);

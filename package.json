@@ -21,6 +21,7 @@
     "dat.gui": "^0.7.9",
     "gl-matrix": "^3.4.3",
     "stats-js": "^1.0.1",
+    "webgl-obj-loader": "^2.0.8",
     "wgpu-matrix": "^3.0.2"
   }
 }

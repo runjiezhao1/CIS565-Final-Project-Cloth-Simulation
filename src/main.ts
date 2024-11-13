@@ -1,6 +1,7 @@
-import { cubeSrc } from "./shaders/shader";
+import { cubeSrc, objSrc } from "./shaders/shader";
 import { TriangleMesh } from "./triangle_mesh";
 import { CubeMesh } from "./cube_mesh";
+import { ObjMesh } from "./obj_mesh";
 import { Camera } from "./stage/camera";
 import { GUIController } from "./gui/gui";
 import Stats from 'stats-js';
@@ -48,6 +49,7 @@ const main = async() => {
 
     const triangleMesh: TriangleMesh = new TriangleMesh(device);
     const cubeMesh : CubeMesh = new CubeMesh(device);
+    const objMesh : ObjMesh = new ObjMesh(device, new Float32Array([]), new Uint32Array([]));
 
     const bindGroupLayout = device.createBindGroupLayout({
         entries: [
@@ -180,6 +182,92 @@ const main = async() => {
         requestAnimationFrame(render);
     }
 
+    // This function will be updated every frame
+    function renderObj(currentTime: number) {
+        // FPS detector
+        stats.begin();
+        // GUI controller
+        const backgroundColor = guiController.settings.backgroundColor;
+        const deltaTime = currentTime - prevTime;
+
+        if(guiController.updateBuffer){
+            guiController.updateBuffer = false;
+            objMesh.updateBuffer(new Float32Array(guiController.vertices), new Uint32Array(guiController.indices));
+        }
+
+        camera.updateViewMatrix();
+        uniformData.set(camera.viewMatrix, 16);
+        uniformData.set([deltaTime,0,0,0], 32);
+        device.queue.writeBuffer(uniformBuffer, 0, uniformData.buffer, uniformData.byteOffset, uniformData.byteLength);
+        //command encoder: records draw commands for submission
+        const commandEncoder : GPUCommandEncoder = device.createCommandEncoder();
+        //texture view: image view to the color buffer in this case
+        const textureView : GPUTextureView = context.getCurrentTexture().createView();
+
+        //renderpass: holds draw commands, allocated from command encoder
+        const renderpass : GPURenderPassEncoder = commandEncoder.beginRenderPass({
+            colorAttachments: [{
+                view: textureView,
+                clearValue: {
+                    r: backgroundColor[0] / 255,
+                    g: backgroundColor[1] / 255,
+                    b: backgroundColor[2] / 255,
+                    a: 1.0
+                },
+                loadOp: "clear",
+                storeOp: "store"
+            }]
+        });
+
+        //setup pipeline
+        const pipeline = device.createRenderPipeline({
+            vertex : {
+                module : device.createShaderModule({
+                    code : objSrc
+                }),
+                entryPoint : "vs_main",
+                buffers: [
+                    {
+                        arrayStride: 3 * 4, // Each vertex has 6 floats (x, y, z, r, g, b)
+                        attributes: [
+                            { shaderLocation: 0, offset: 0, format: "float32x3" }, // Position attribute
+                        ],
+                    },
+                ],
+            },
+    
+            fragment : {
+                module : device.createShaderModule({
+                    code : objSrc
+                }),
+                entryPoint : "fs_main",
+                targets : [{
+                    format : format
+                }]
+            },
+    
+            primitive : {
+                topology : "triangle-list"
+            },
+    
+            layout: pipelineLayout
+        });
+        
+        renderpass.setPipeline(pipeline);
+        renderpass.setVertexBuffer(0, objMesh.vertexBuffer);
+        renderpass.setIndexBuffer(objMesh.indexBuffer, "uint32");
+        renderpass.setBindGroup(0, bindGroup)
+        renderpass.drawIndexed(objMesh.indexCount); // Draw using indices
+        renderpass.end();
+        device.queue.submit([commandEncoder.finish()]);
+        stats.end();
+        console.log("render obj ends");
+        prevTime = currentTime;
+
+        // Request the next frame
+        requestAnimationFrame(renderObj);
+    }
+
     function handleKeyDown(event: KeyboardEvent) {
         const cameraSpeed = guiController.settings.cameraSpeed;
         switch (event.key) {
@@ -228,7 +316,7 @@ const main = async() => {
     });
 
     // start the initial render frame
-    render();
+    renderObj();
 }
 
 main();
