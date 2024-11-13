@@ -1,6 +1,8 @@
 struct Uniforms {
     projectionMatrix : mat4x4<f32>,
     viewMatrix : mat4x4<f32>,
+    //[TODO:] 我这里只用了vec4的第一位因为webgpu最少要4个float加进来
+    deltaTime: vec4<f32>
 };
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 
@@ -10,7 +12,7 @@ struct Fragment {
 };
 
 @vertex
-fn vs_main(@location(0) vertexPosition: vec3<f32>, @location(1) vertexColor: vec3<f32>) -> Fragment {
+fn vs_main(@location(0) vertexPosition: vec3<f32>, @location(1) vertexColor: vec3<f32>, @location(2) weight: f32, @location(3) velocity: vec3<f32>) -> Fragment {
     var output : Fragment;
     output.Position = uniforms.projectionMatrix * uniforms.viewMatrix * vec4<f32>(vertexPosition, 1);
     output.Color = vec4<f32>(vertexColor, 1.0);

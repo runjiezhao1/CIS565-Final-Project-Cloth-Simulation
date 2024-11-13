@@ -6,7 +6,8 @@ import { GUIController } from "./gui/gui";
 import Stats from 'stats-js';
 
 const main = async() => {
-    
+    let prevTime = 0;
+
     // Initial display for framerate
     const stats = Stats();
     stats.setMode(0);
@@ -36,14 +37,14 @@ const main = async() => {
 
     // Create uniform buffer for camera matrices
     const uniformBuffer = device.createBuffer({
-        size: 2 * 16 * Float32Array.BYTES_PER_ELEMENT, // Two 4x4 matrices (projection and view)
+        size: (2 * 16 + 4) * Float32Array.BYTES_PER_ELEMENT, // Two 4x4 matrices (projection and view)
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    const uniformData = new Float32Array(32);
+    const uniformData = new Float32Array(36);
     uniformData.set(camera.projectionMatrix, 0);
     uniformData.set(camera.viewMatrix, 16);
-    //device.queue.writeBuffer(uniformBuffer, 0, uniformData.buffer, uniformData.byteOffset, uniformData.byteLength);
+    uniformData.set( [prevTime] ,32);
 
     const triangleMesh: TriangleMesh = new TriangleMesh(device);
     const cubeMesh : CubeMesh = new CubeMesh(device);
@@ -75,44 +76,47 @@ const main = async() => {
         bindGroupLayouts: [bindGroupLayout]
     });
 
-    const pipeline = device.createRenderPipeline({
-        vertex : {
-            module : device.createShaderModule({
-                code : cubeSrc
-            }),
-            entryPoint : "vs_main",
-            buffers: [cubeMesh.bufferLayout,]
-        },
+    // const pipeline = device.createRenderPipeline({
+    //     vertex : {
+    //         module : device.createShaderModule({
+    //             code : cubeSrc
+    //         }),
+    //         entryPoint : "vs_main",
+    //         buffers: [cubeMesh.bufferLayout,]
+    //     },
 
-        fragment : {
-            module : device.createShaderModule({
-                code : cubeSrc
-            }),
-            entryPoint : "fs_main",
-            targets : [{
-                format : format
-            }]
-        },
+    //     fragment : {
+    //         module : device.createShaderModule({
+    //             code : cubeSrc
+    //         }),
+    //         entryPoint : "fs_main",
+    //         targets : [{
+    //             format : format
+    //         }]
+    //     },
 
-        primitive : {
-            topology : "triangle-list"
-        },
+    //     primitive : {
+    //         topology : "triangle-list"
+    //     },
 
-        layout: pipelineLayout
-    });
+    //     layout: pipelineLayout
+    // });
 
     
     // This function will be updated every frame
-    function render() {
+    function render(currentTime: number) {
         // FPS detector
         stats.begin();
         // GUI controller
         const backgroundColor = guiController.settings.backgroundColor;
+        const deltaTime = currentTime - prevTime;
+        //console.log((currentTime - prevTime) / 1000);
 
         camera.updateViewMatrix();
         uniformData.set(camera.viewMatrix, 16);
+        uniformData.set([deltaTime,0,0,0], 32);
         device.queue.writeBuffer(uniformBuffer, 0, uniformData.buffer, uniformData.byteOffset, uniformData.byteLength);
-        console.log(camera.position);
+        //console.log(camera.position);
         //command encoder: records draw commands for submission
         const commandEncoder : GPUCommandEncoder = device.createCommandEncoder();
         //texture view: image view to the color buffer in this case
@@ -132,6 +136,34 @@ const main = async() => {
                 storeOp: "store"
             }]
         });
+
+        //setup pipeline
+        const pipeline = device.createRenderPipeline({
+            vertex : {
+                module : device.createShaderModule({
+                    code : cubeSrc
+                }),
+                entryPoint : "vs_main",
+                buffers: [cubeMesh.bufferLayout,]
+            },
+    
+            fragment : {
+                module : device.createShaderModule({
+                    code : cubeSrc
+                }),
+                entryPoint : "fs_main",
+                targets : [{
+                    format : format
+                }]
+            },
+    
+            primitive : {
+                topology : "triangle-list"
+            },
+    
+            layout: pipelineLayout
+        });
+        
         renderpass.setPipeline(pipeline);
         renderpass.setVertexBuffer(0, cubeMesh.buffer);
         renderpass.setBindGroup(0, bindGroup)
@@ -140,6 +172,10 @@ const main = async() => {
         device.queue.submit([commandEncoder.finish()]);
 
         stats.end();
+
+        cubeMesh.updatePosition(deltaTime);
+        prevTime = currentTime;
+
         // Request the next frame
         requestAnimationFrame(render);
     }
