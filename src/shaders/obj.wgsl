@@ -15,7 +15,8 @@ struct Fragment {
 fn vs_main(@location(0) vertexPosition: vec3<f32>) -> Fragment {
     var output : Fragment;
     output.Position = uniforms.projectionMatrix * uniforms.viewMatrix * vec4<f32>(vertexPosition, 1);
-    output.Color = vec4<f32>(1.0, 0.0, 1.0, 1.0);
+    output.Color = normalize(vec4<f32>(vertexPosition, 1.0));;//vec4<f32>(1.0, 0.0, 1.0, 1.0);
+    var time = uniforms.deltaTime;
     return output;
 }
 
