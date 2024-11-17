@@ -21,7 +21,7 @@ export class Camera {
         near: number = 0.1,
         far: number = 100.0
     ) {
-        this.position = vec3.fromValues(0, 0, 5); // Camera starting position
+        this.position = vec3.fromValues(0, 20, 100); // Camera starting position
         this.target = vec3.fromValues(0, 0, 0);   // Look at the origin
         this.up = vec3.fromValues(0, 1, 0);       // Up direction
 
