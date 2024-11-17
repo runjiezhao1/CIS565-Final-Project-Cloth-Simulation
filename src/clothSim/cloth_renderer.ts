@@ -1,5 +1,5 @@
 import { Renderer } from "../renderer";
-import { calculateNormal, makeFloat32ArrayBufferStorage, makeUInt32IndexArrayBuffer, ObjLoader, ObjModel } from "../utils";
+import { calculateNormal, makeFloat32ArrayBuffer, makeFloat32ArrayBufferStorage, makeUInt32IndexArrayBuffer, ObjLoader, ObjModel } from "../utils";
 import { cubeSrc, objSrc, PDSrc } from "../shaders/shader";
 import { vec3 } from "gl-matrix";
 import { Node, Triangle, Spring } from "../PhysicsSystem/Particles";
@@ -51,6 +51,31 @@ export class ClothRenderer extends Renderer {
     //springs
     springs : Spring[] = [];
     maxSpringConnected : number = 0;
+    springIndices!: Uint32Array;
+
+    //buffers for particles
+    positionBuffer!: GPUBuffer;
+    prevPositionBuffer!: GPUBuffer;
+    velocityBuffer!: GPUBuffer;
+    forceBuffer!: GPUBuffer;
+    vertexNormalBuffer!: GPUBuffer;
+    fixedBuffer!: GPUBuffer;
+    uvBuffer!: GPUBuffer;
+
+    //buffers for springs
+    springRenderBuffer!: GPUBuffer;
+    triangleRenderBuffer!: GPUBuffer;
+    springCalculationBuffer!: GPUBuffer;
+    triangleCalculationBuffer!: GPUBuffer;
+
+    //uniform buffers
+    numParticlesBuffer!: GPUBuffer;
+
+    //temp buffers
+    tempSpringForceBuffer!: GPUBuffer;
+    tempTriangleNormalBuffer!: GPUBuffer;
+    collisionTempBuffer!: GPUBuffer;
+    collisionCountTempBuffer!: GPUBuffer;
 
     async init() {
         await super.init();
@@ -318,6 +343,133 @@ export class ClothRenderer extends Renderer {
             this.maxTriangleConnected = Math.max(this.maxTriangleConnected, nConnectedTriangle);
         }
         console.log(this.maxTriangleConnected);
+    }
+
+    createClothBuffers(){
+        const positionData = new Float32Array(this.particles.flatMap(p => [p.position[0], p.position[1], p.position[2]]));
+        const velocityData = new Float32Array(this.particles.flatMap(p => [p.velocity[0], p.velocity[1], p.velocity[2]]));
+        const forceData = new Float32Array(this.particles.flatMap(p => [0.0, 0.0, 0.0]));
+        const normalData = new Float32Array(this.normals.flatMap(p => [p[0], p[1], p[2]]));
+
+        this.positionBuffer = makeFloat32ArrayBufferStorage(this.device, positionData);
+        this.prevPositionBuffer = makeFloat32ArrayBufferStorage(this.device, positionData);
+        this.velocityBuffer = makeFloat32ArrayBufferStorage(this.device, velocityData);
+        this.forceBuffer = makeFloat32ArrayBufferStorage(this.device, forceData);
+
+        this.vertexNormalBuffer = makeFloat32ArrayBufferStorage(this.device, normalData);
+
+        const fixedData = new Uint32Array(this.particles.length);
+        this.particles.forEach((particle, i) => {
+            fixedData[i] = particle.fixed ? 1 : 0;
+        });
+
+        this.fixedBuffer = this.device.createBuffer({
+            size: fixedData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST, 
+            mappedAtCreation: true,
+        });
+        new Uint32Array(this.fixedBuffer.getMappedRange()).set(fixedData);
+        this.fixedBuffer.unmap();
+
+        this.springIndices = new Uint32Array(this.springs.length * 2);
+        this.springs.forEach((spring, i) => {
+            let offset = i * 2;
+            this.springIndices[offset] = spring.index1;
+            this.springIndices[offset + 1] = spring.index2;
+        });
+
+        this.springRenderBuffer = makeUInt32IndexArrayBuffer(this.device, this.springIndices);
+
+        this.uvBuffer = makeFloat32ArrayBuffer(this.device, this.uv);
+
+        this.triangleRenderBuffer = this.device.createBuffer({
+            size: this.triangleIndices.byteLength,
+            usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
+            mappedAtCreation: true,
+        });
+        new Uint32Array(this.triangleRenderBuffer.getMappedRange()).set(this.triangleIndices);
+        this.triangleRenderBuffer.unmap();
+
+        const springCalcData = new Float32Array(this.springs.length * 7); // 7 elements per spring
+        this.springs.forEach((spring, i) => {
+            let offset = i * 7;
+            springCalcData[offset] = spring.index1;
+            springCalcData[offset + 1] = spring.index2;
+            springCalcData[offset + 2] = spring.kS;
+            springCalcData[offset + 3] = spring.kD;
+            springCalcData[offset + 4] = spring.mRestLen;
+            springCalcData[offset + 5] = spring.targetIndex1;
+            springCalcData[offset + 6] = spring.targetIndex2;
+        });
+        // Create the GPU buffer for springs
+        this.springCalculationBuffer = this.device.createBuffer({
+            size: springCalcData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+            mappedAtCreation: true,
+        });
+        new Float32Array(this.springCalculationBuffer.getMappedRange()).set(springCalcData);
+        this.springCalculationBuffer.unmap();
+
+        const triangleCalcData = new Float32Array(this.triangles.length * 3); // 7 elements per spring
+        this.triangles.forEach((triangle, i) => {
+            let offset = i * 3;
+            triangleCalcData[offset] = triangle.v1;
+            triangleCalcData[offset + 1] = triangle.v2;
+            triangleCalcData[offset + 2] = triangle.v3;
+        });
+        this.triangleCalculationBuffer = this.device.createBuffer({
+            size: triangleCalcData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+            mappedAtCreation: true,
+        });
+        new Float32Array(this.triangleCalculationBuffer.getMappedRange()).set(triangleCalcData);
+        this.triangleCalculationBuffer.unmap();
+
+        const numParticlesData = new Uint32Array([this.numParticles]);
+        this.numParticlesBuffer = this.device.createBuffer({
+            size: numParticlesData.byteLength,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true,
+        });
+        new Uint32Array(this.numParticlesBuffer.getMappedRange()).set(numParticlesData);
+        this.numParticlesBuffer.unmap();
+
+        const nodeSpringConnectedData = new Int32Array(this.numParticles * 3);
+        this.tempSpringForceBuffer = this.device.createBuffer({
+            size: nodeSpringConnectedData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+            mappedAtCreation: true,
+        });
+        new Int32Array(this.tempSpringForceBuffer.getMappedRange()).set(nodeSpringConnectedData);
+        this.tempSpringForceBuffer.unmap();
+
+        const nodeTriangleConnectedData = new Uint32Array(this.numParticles * 3);
+        this.tempTriangleNormalBuffer = this.device.createBuffer({
+            size: nodeTriangleConnectedData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+            mappedAtCreation: true,
+        });
+        new Uint32Array(this.tempTriangleNormalBuffer.getMappedRange()).set(nodeTriangleConnectedData);
+        this.tempTriangleNormalBuffer.unmap();
+
+
+        const collisionTempData = new Int32Array(this.numParticles * 3);
+        this.collisionTempBuffer = this.device.createBuffer({
+            size: collisionTempData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+            mappedAtCreation: true,
+        });
+        new Int32Array(this.collisionTempBuffer.getMappedRange()).set(collisionTempData);
+        this.collisionTempBuffer.unmap();
+
+        const collisionCountTempData = new Int32Array(this.numParticles);
+        this.collisionCountTempBuffer = this.device.createBuffer({
+            size: collisionCountTempData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+            mappedAtCreation: true,
+        });
+        new Int32Array(this.collisionCountTempBuffer.getMappedRange()).set(collisionCountTempData);
+        this.collisionCountTempBuffer.unmap();
     }
 
     async createModelInfo(){
