@@ -1,32 +1,50 @@
 import { mat4, vec3 } from 'gl-matrix';
 import { Camera } from './stage/camera';
-import { GUIController } from 'dat.gui';
+import { GUIController } from './gui/gui';
+import Stats from 'stats-js';
 
 export class Renderer{
     canvas!: HTMLCanvasElement;
     device!: GPUDevice;
-    camera!: Camera;
     context!: GPUCanvasContext;
     format!: GPUTextureFormat;
     mvpUniformBuffer!: GPUBuffer;
-    guiController!: GUIController;
     sampleCount: number = 4;
     depthTexture!: GPUTexture;
     resolveTexture!: GPUTexture;
+
+    // Camera
+    camera!: Camera;
     camera_position: vec3 = vec3.fromValues(0, 0, 0);
+
+    // GUI
+    guiController!: GUIController;
+
+    // Light
     light_position: vec3 = vec3.fromValues(150.0, 500.0, 150.0);
     light_color: vec3 = vec3.fromValues(0.0, 1.0, 1.0);
     light_intensity: number = 1.0;
     specular_strength: number = 1.5;
     shininess: number = 1024.0;
     localFrameCount: number = 0;
+    /*
     stats = {
         fps: 0,
         ms: ""
     };
+    */
+    stats = Stats(); // Initial display for framerate
     lastTime: number = 0;
 
+    // cloth
+    // Debug! How to set the size of cloth then start the simulation?
+    cloth_SizeX: number = 5;
+    cloth_SizeY: number = 5;
+
     renderOptions = {
+        clothSizeX: this.cloth_SizeX,
+        clothSizeY: this.cloth_SizeY,
+
         wireFrame: false,
         camPosX: this.camera_position[0],
         camPosY: this.camera_position[1],
@@ -47,6 +65,8 @@ export class Renderer{
         specularStrength: this.specular_strength,
         shininess: this.shininess,
     }
+    
+
 
     constructor(canvasName: string){
         this.canvas = document.getElementById(canvasName) as HTMLCanvasElement;
@@ -59,6 +79,18 @@ export class Renderer{
         const aspectRatio = this.canvas.width / this.canvas.height;
         this.camera = new Camera(aspectRatio);
         console.log("Rendered Initialized");
+        // GUI
+        this.guiController = new GUIController();
+
+        // Initialize stats display for FPS
+        this.stats.setMode(0); // 0: FPS, 1: ms/frame
+        this.stats.domElement.style.position = 'absolute';
+        this.stats.domElement.style.left = '0px';
+        this.stats.domElement.style.top = '0px';
+        document.body.appendChild(this.stats.domElement);
+        // Initialize the size of the cloth
+
+
     }
 
     async init(){
@@ -135,5 +167,30 @@ export class Renderer{
         data.set(projection, 16);
         console.log(data.byteLength);
         this.device.queue.writeBuffer(this.mvpUniformBuffer, 0, data.buffer, data.byteOffset, data.byteLength);
+    }
+
+    statsOn() {
+        this.stats.begin();
+    }
+
+    statsEnd() {
+        this.stats.end();
+    }
+
+    getUserInputClothSize(): number[] {
+        return [this.renderOptions.clothSizeX, this.renderOptions.clothSizeY];
+    }
+
+    rotateCamera(dx: number, dy: number) {
+        this.camera.look(dx, dy);
+    }
+
+    panCamera(dx: number, dy: number) {
+       this.camera.moveUp(dy);
+       this.camera.moveRight(-dx);
+    }
+
+    zoomCamera(value: number) {
+        this.camera.moveForward(value);
     }
 }

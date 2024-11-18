@@ -1830,8 +1830,8 @@ export class ClothRenderer extends Renderer {
         this.device.queue.submit([commandEncoder.finish()]);
         await this.device.queue.onSubmittedWorkDone();
 
-        this.stats.ms = (currentTime - this.lastTime).toFixed(2);
-        this.stats.fps = Math.round(1000.0 / (currentTime - this.lastTime));
+        //this.stats.ms = (currentTime - this.lastTime).toFixed(2);
+        //this.stats.fps = Math.round(1000.0 / (currentTime - this.lastTime));
 
         this.lastTime = currentTime;
         this.localFrameCount++;
