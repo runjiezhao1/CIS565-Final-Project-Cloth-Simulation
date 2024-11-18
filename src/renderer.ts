@@ -81,6 +81,7 @@ export class Renderer{
         console.log("Rendered Initialized");
         // GUI
         this.guiController = new GUIController();
+        
 
         // Initialize stats display for FPS
         this.stats.setMode(0); // 0: FPS, 1: ms/frame
@@ -192,5 +193,9 @@ export class Renderer{
 
     zoomCamera(value: number) {
         this.camera.moveForward(value);
+    }
+
+    initializeGUI() {
+        this.guiController.initGUI();
     }
 }

@@ -1,6 +1,5 @@
 import { ClothRenderer } from "./clothSim/cloth_renderer";
 
-
 //start cloth simluation
 const main1 = async() => {
     // camera control
@@ -51,6 +50,7 @@ const main1 = async() => {
         });
 
         // Render cloth simulation
+        clothRenderer.initializeGUI();
         clothRenderer.createClothInfo(clothSize[0], clothSize[1], 500.0, 250.0, 1500.0, 0.3);
         clothRenderer.createClothBuffers();
         clothRenderer.createRenderPipeline();
@@ -65,6 +65,7 @@ const main1 = async() => {
         // clothRenderer.writeBuffer();
         // clothRenderer.createRenderPipelineObj();
         // clothRenderer.renderCloth();
+        
         beginRender();
         
     });

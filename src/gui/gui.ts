@@ -1,6 +1,7 @@
 import * as dat from 'dat.gui';
 import { parseOBJ } from '../utils';
 import { ObjMesh } from '../obj_mesh';
+import { Camera } from '../stage/camera'; 
 //import { main1 } from '../main';
 interface GUISettings 
 {
@@ -16,6 +17,7 @@ export class GUIController
     public vertices : number[];
     public indices : number[];
     public updateBuffer : boolean = false;
+    private camera: Camera;
     constructor() 
     {
         this.vertices = [];
@@ -26,10 +28,10 @@ export class GUIController
             clothSizeX: 5,
             clothSizeY: 5,
         };
-        this.initGUI();
+        //this.initGUI();
     }
 
-    private initGUI() 
+    public initGUI() 
     {
         // Add button options here:
         var params = {
@@ -47,7 +49,10 @@ export class GUIController
 
         // Folder for camera
         const folder_camera = this.gui.addFolder('Camera');
-        folder_camera.add(this.settings, 'sensitivity', 1, 5).name('Sensitivity');
+        const sensitivityControl = folder_camera.add(this.settings, 'sensitivity', 1, 5).name('Sensitivity');
+        sensitivityControl.onChange((value: number) => {
+            this.camera.sensitivity = value * 0.1; // Update the camera's sensitivity when the slider is changed
+        });
 
         // other attributes
         this.gui.add(params, 'loadFile').name("Load Obj File");
