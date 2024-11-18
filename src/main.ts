@@ -2,12 +2,80 @@ import { ClothRenderer } from "./clothSim/cloth_renderer";
 
 //start cloth simluation
 const main1 = async() => {
-    var clothRenderer : ClothRenderer = new ClothRenderer("canvas-webgpu");
-    clothRenderer.init().then(() => {
-        clothRenderer.writeBuffer();
-        clothRenderer.createRenderPipeline();
-        clothRenderer.renderCloth();
+    // camera control
+    const canvas = document.querySelector("canvas#canvas-webgpu") as HTMLCanvasElement;
+    if (!canvas) {
+        console.error("Canvas element not found");
+        return;
+    }
+    let isLeftMouseDown = false;
+    let isRightMouseDown = false;
+    let lastMouseX: number, lastMouseY: number;
+    canvas.addEventListener('mousedown', (event: MouseEvent) => {
+        if (event.button === 0) {
+            isLeftMouseDown = true;
+            console.log("left mouse click");
+        } else if (event.button === 2) {
+            isRightMouseDown = true;
+            console.log("right mouse click");
+        }
+        lastMouseX = event.clientX;
+        lastMouseY = event.clientY;
     });
+
+    document.addEventListener('mouseup', (event) => {
+        isLeftMouseDown = false;
+        isRightMouseDown = false;
+    });
+
+    var clothRenderer : ClothRenderer = new ClothRenderer("canvas-webgpu");
+    var clothSize = clothRenderer.getUserInputClothSize()
+    clothRenderer.init().then(() => {
+        canvas.addEventListener('mousemove', (event) => {
+            if (isLeftMouseDown) {
+                const dx = event.clientX - lastMouseX;
+                const dy = event.clientY - lastMouseY;
+                clothRenderer.rotateCamera(dx, dy);
+            } else if (isRightMouseDown) {
+                const dx = event.clientX - lastMouseX;
+                const dy = event.clientY - lastMouseY;
+                clothRenderer.panCamera(dx, dy);
+            }
+            lastMouseX = event.clientX;
+            lastMouseY = event.clientY;
+        });
+
+        canvas.addEventListener('wheel', (event) => {
+            clothRenderer.zoomCamera(event.deltaY / 100);
+        });
+
+        // Render cloth simulation
+        clothRenderer.initializeGUI();
+        clothRenderer.createClothInfo(clothSize[0], clothSize[1], 500.0, 250.0, 1500.0, 0.3);
+        clothRenderer.createClothBuffers();
+        clothRenderer.createRenderPipeline();
+        clothRenderer.createSpringPipeline();
+        clothRenderer.createTrianglePipeline();
+        clothRenderer.createParticlePipeline();
+        clothRenderer.createUpdateNormalPipeline();
+        clothRenderer.createSpringForceComputePipeline();
+        clothRenderer.createNodeForceSummationPipeline();
+        clothRenderer.createIntersectionPipeline();
+        clothRenderer.createTriTriIntersectionPipeline();
+        // clothRenderer.writeBuffer();
+        // clothRenderer.createRenderPipelineObj();
+        // clothRenderer.renderCloth();
+        
+        beginRender();
+        
+    });
+
+    function beginRender() {
+        clothRenderer.statsOn();
+        clothRenderer.render();
+        clothRenderer.statsEnd();
+        requestAnimationFrame(beginRender);
+    }
 }
 
 main1();

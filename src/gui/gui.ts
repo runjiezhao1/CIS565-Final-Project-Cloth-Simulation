@@ -1,10 +1,13 @@
 import * as dat from 'dat.gui';
 import { parseOBJ } from '../utils';
 import { ObjMesh } from '../obj_mesh';
+import { Camera } from '../stage/camera'; 
+//import { main1 } from '../main';
 interface GUISettings 
 {
-    cameraSpeed: number;
-    backgroundColor: number[];
+    sensitivity: number;
+    clothSizeX: number;
+    clothSizeY: number;
 }
 
 export class GUIController 
@@ -14,28 +17,47 @@ export class GUIController
     public vertices : number[];
     public indices : number[];
     public updateBuffer : boolean = false;
+    private camera: Camera;
     constructor() 
     {
         this.vertices = [];
         this.indices = [];
         this.gui = new dat.GUI();
         this.settings = {
-          cameraSpeed: 1.0,
-          backgroundColor: [255, 255, 255], // RGB color
+            sensitivity: 1.0,
+            clothSizeX: 5,
+            clothSizeY: 5,
         };
-        this.initGUI();
+        //this.initGUI();
     }
 
-    private initGUI() 
+    public initGUI() 
     {
-        //[TODO]:这一段params需要改一下
+        // Add button options here:
         var params = {
-            loadFile: () => this.loadFile()
+            loadFile: () => this.loadFile(),
+            startSimulation: () => {
+                //main1();
+                console.log("start cloth simulation!");
+            }
         };
+        // Folder for attributes of cloth
+        const folder_cloth = this.gui.addFolder('Cloth');
+        folder_cloth.add(this.settings, 'clothSizeX', 1, 100).name('Cloth Size X');
+        folder_cloth.add(this.settings, 'clothSizeY', 1, 100).name('Cloth Size Y');
+        folder_cloth.open();
 
-        this.gui.add(this.settings, 'cameraSpeed', 1, 5).name('Camera Speed');
-        this.gui.addColor(this.settings, 'backgroundColor').name('Background Color');
+        // Folder for camera
+        const folder_camera = this.gui.addFolder('Camera');
+        const sensitivityControl = folder_camera.add(this.settings, 'sensitivity', 1, 5).name('Sensitivity');
+        sensitivityControl.onChange((value: number) => {
+            this.camera.sensitivity = value * 0.1; // Update the camera's sensitivity when the slider is changed
+        });
+
+        // other attributes
         this.gui.add(params, 'loadFile').name("Load Obj File");
+        this.gui.add(params, 'startSimulation').name("Start");
+        
     }
 
     public onBackgroundColorChange(callback: (color: number[]) => void) 

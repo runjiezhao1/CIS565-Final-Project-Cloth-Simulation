@@ -1,3 +1,5 @@
+import { vec3 } from "gl-matrix";
+
 export function parseOBJ(objData: string) {
   const vertices: number[] = [];
   const indices: number[] = [];
@@ -190,4 +192,17 @@ export function makeUInt32IndexArrayBuffer(device: GPUDevice, data: any) {
   new Uint32Array(buffer.getMappedRange()).set(data);
   buffer.unmap();
   return buffer;
+}
+
+export function calculateNormal(v0: vec3, v1: vec3, v2: vec3) {
+  let edge1 = vec3.create();
+  let edge2 = vec3.create();
+  let normal = vec3.create();
+
+  vec3.subtract(edge1, v1, v0);
+  vec3.subtract(edge2, v2, v0);
+  vec3.cross(normal, edge1, edge2);
+  vec3.normalize(normal, normal);
+
+  return normal;
 }
