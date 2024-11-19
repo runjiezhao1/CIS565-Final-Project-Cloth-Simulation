@@ -1,6 +1,7 @@
 import { ClothRenderer } from "./clothSim/cloth_renderer";
-
+import { GUIController } from './gui/gui';
 //start cloth simluation
+
 const main1 = async() => {
     // camera control
     const canvas = document.querySelector("canvas#canvas-webgpu") as HTMLCanvasElement;
@@ -22,60 +23,32 @@ const main1 = async() => {
         lastMouseX = event.clientX;
         lastMouseY = event.clientY;
     });
-
     document.addEventListener('mouseup', (event) => {
         isLeftMouseDown = false;
         isRightMouseDown = false;
     });
-
-    var clothRenderer : ClothRenderer = new ClothRenderer("canvas-webgpu");
-    var clothSize = clothRenderer.getUserInputClothSize()
-    clothRenderer.init().then(() => {
-        canvas.addEventListener('mousemove', (event) => {
-            if (isLeftMouseDown) {
-                const dx = event.clientX - lastMouseX;
-                const dy = event.clientY - lastMouseY;
-                clothRenderer.rotateCamera(dx, dy);
-            } else if (isRightMouseDown) {
-                const dx = event.clientX - lastMouseX;
-                const dy = event.clientY - lastMouseY;
-                clothRenderer.panCamera(dx, dy);
-            }
-            lastMouseX = event.clientX;
-            lastMouseY = event.clientY;
-        });
-
-        canvas.addEventListener('wheel', (event) => {
-            clothRenderer.zoomCamera(event.deltaY / 100);
-        });
-
-        // Render cloth simulation
-        clothRenderer.initializeGUI();
-        clothRenderer.createClothInfo(clothSize[0], clothSize[1], 500.0, 250.0, 1500.0, 0.3);
-        clothRenderer.createClothBuffers();
-        clothRenderer.createRenderPipeline();
-        clothRenderer.createSpringPipeline();
-        clothRenderer.createTrianglePipeline();
-        clothRenderer.createParticlePipeline();
-        clothRenderer.createUpdateNormalPipeline();
-        clothRenderer.createSpringForceComputePipeline();
-        clothRenderer.createNodeForceSummationPipeline();
-        clothRenderer.createIntersectionPipeline();
-        clothRenderer.createTriTriIntersectionPipeline();
-        // clothRenderer.writeBuffer();
-        // clothRenderer.createRenderPipelineObj();
-        // clothRenderer.renderCloth();
-        
-        beginRender();
-        
+    canvas.addEventListener('mousemove', (event) => {
+        if (isLeftMouseDown) {
+            const dx = event.clientX - lastMouseX;
+            const dy = event.clientY - lastMouseY;
+            clothRenderer.rotateCamera(dx, dy);
+        } else if (isRightMouseDown) {
+            const dx = event.clientX - lastMouseX;
+            const dy = event.clientY - lastMouseY;
+            clothRenderer.panCamera(dx, dy);
+        }
+        lastMouseX = event.clientX;
+        lastMouseY = event.clientY;
+    });
+    canvas.addEventListener('wheel', (event) => {
+        clothRenderer.zoomCamera(event.deltaY / 100);
     });
 
-    function beginRender() {
-        clothRenderer.statsOn();
-        clothRenderer.render();
-        clothRenderer.statsEnd();
-        requestAnimationFrame(beginRender);
-    }
+    // Cloth Renderer
+    var clothRenderer : ClothRenderer = new ClothRenderer("canvas-webgpu");
+
+    // call this after user set up the size of cloth
+    clothRenderer.initializeGUI();
 }
 
 main1();

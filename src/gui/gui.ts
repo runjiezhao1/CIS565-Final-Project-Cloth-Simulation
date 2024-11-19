@@ -13,7 +13,7 @@ interface GUISettings
 export class GUIController 
 {
     public settings: GUISettings;
-    private gui: dat.GUI;
+    public gui: dat.GUI = new dat.GUI();
     public vertices : number[];
     public indices : number[];
     public updateBuffer : boolean = false;

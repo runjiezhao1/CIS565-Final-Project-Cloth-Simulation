@@ -2,6 +2,7 @@ import { mat4, vec3 } from 'gl-matrix';
 import { Camera } from './stage/camera';
 import { GUIController } from './gui/gui';
 import Stats from 'stats-js';
+import { ClothRenderer } from './clothSim/cloth_renderer';
 
 export class Renderer{
     canvas!: HTMLCanvasElement;
@@ -12,10 +13,12 @@ export class Renderer{
     sampleCount: number = 4;
     depthTexture!: GPUTexture;
     resolveTexture!: GPUTexture;
+    isRunning : boolean = false;
 
     // Camera
     camera!: Camera;
     camera_position: vec3 = vec3.fromValues(0, 0, 0);
+    sensitivity: number = 1;
 
     // GUI
     guiController!: GUIController;
@@ -37,11 +40,11 @@ export class Renderer{
     lastTime: number = 0;
 
     // cloth
-    // Debug! How to set the size of cloth then start the simulation?
     cloth_SizeX: number = 5;
     cloth_SizeY: number = 5;
 
     renderOptions = {
+        sensitivity: this.sensitivity,
         clothSizeX: this.cloth_SizeX,
         clothSizeY: this.cloth_SizeY,
 
@@ -80,18 +83,7 @@ export class Renderer{
         this.camera = new Camera(aspectRatio);
         console.log("Rendered Initialized");
         // GUI
-        this.guiController = new GUIController();
-        
-
-        // Initialize stats display for FPS
-        this.stats.setMode(0); // 0: FPS, 1: ms/frame
-        this.stats.domElement.style.position = 'absolute';
-        this.stats.domElement.style.left = '0px';
-        this.stats.domElement.style.top = '0px';
-        document.body.appendChild(this.stats.domElement);
-        // Initialize the size of the cloth
-
-
+        //this.initializeGUI();
     }
 
     async init(){
@@ -196,6 +188,53 @@ export class Renderer{
     }
 
     initializeGUI() {
-        this.guiController.initGUI();
+        this.guiController = new GUIController();
+        // Add button options here:
+        var params = {
+            loadFile: () => this.guiController.loadFile(),
+            startSimulation: () => {
+                // TODO: call clothRenderer.startClothSimulation() in main.ts
+                // if(this instanceof ClothRenderer){
+                //     this.clearAllBuffers();
+                // }
+                this.isRunning = true;
+                this.init().then(()=>{
+                    if(this instanceof ClothRenderer){
+                        this.initializeClothSimulation(Math.round(this.renderOptions.clothSizeX), Math.round(this.renderOptions.clothSizeX));
+                        this.beginRender();
+                    }
+                });
+                console.log("start cloth simulation!");
+            }
+        };
+        // Initialize stats display for FPS
+        this.stats.setMode(0); // 0: FPS, 1: ms/frame
+        this.stats.domElement.style.position = 'absolute';
+        this.stats.domElement.style.left = '0px';
+        this.stats.domElement.style.top = '0px';
+        document.body.appendChild(this.stats.domElement);
+        // Initialize the size of the cloth
+        // Folder for attributes of cloth
+        const folder_cloth = this.guiController.gui.addFolder('Cloth');
+        folder_cloth.add(this.guiController.settings, 'clothSizeX', 1, 100).name('Cloth Size X').onChange((value: number)=>{
+            this.renderOptions.clothSizeX = value;
+            this.isRunning = false;
+        });
+        // folder_cloth.add(this.guiController.settings, 'clothSizeY', 1, 100).name('Cloth Size Y').onChange((value: number)=>{
+        //     this.renderOptions.clothSizeY = value;
+        // });
+        folder_cloth.open();
+        // Folder for camera
+        const folder_camera = this.guiController.gui.addFolder('Camera');
+        const sensitivityControl = folder_camera.add(this.guiController.settings, 'sensitivity', 1, 5).name('Sensitivity');
+        sensitivityControl.onChange((value: number) => {
+            this.camera.sensitivity = value * 0.1;
+        });
+        folder_camera.open();
+        // other attributes
+        this.guiController.gui.add(params, 'loadFile').name("Load Obj File");
+        this.guiController.gui.add(params, 'startSimulation').name("Start");
     }
+
 }
+    

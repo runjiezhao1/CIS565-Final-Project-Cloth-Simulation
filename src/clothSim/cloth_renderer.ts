@@ -10,6 +10,7 @@ import { SpringShader } from "../shaders/SpringShader";
 import { IntersectionShader } from "../shaders/IntersectionShader";
 
 export class ClothRenderer extends Renderer {
+
     objLoader : ObjLoader = new ObjLoader();
     objModel : ObjModel = new ObjModel();
     model!: ObjModel;
@@ -561,6 +562,16 @@ export class ClothRenderer extends Renderer {
     }
 
     createParticles() {
+        //[TODO]: Only for testing maybe be modified later
+        this.uvIndices = [];
+        this.particles = [];
+        this.triangles = [];
+        this.numParticles = 0;
+        this.maxTriangleConnected = 0;
+        this.springs = [];
+        this.maxSpringConnected = 0;
+        
+
         // N * M particles
         //20x20 cloth
         const start_x = 30;
@@ -2122,5 +2133,38 @@ export class ClothRenderer extends Renderer {
         this.renderpass.drawIndexed(this.indexCount);
         this.renderpass.end();
         this.device.queue.submit([this.commandEncoder.finish()]);
+    }
+
+    async initializeClothSimulation(clothSizeX: number, clothSizeY: number) {
+        this.createClothInfo(clothSizeX, clothSizeY, 500.0, 250.0, 1500.0, 0.3);
+        this.createClothBuffers();
+        this.createRenderPipeline();
+        this.createSpringPipeline();
+        this.createTrianglePipeline();
+        this.createParticlePipeline();
+        this.createUpdateNormalPipeline();
+        this.createSpringForceComputePipeline();
+        this.createNodeForceSummationPipeline();
+        this.createIntersectionPipeline();
+        this.createTriTriIntersectionPipeline();
+    }
+
+    public beginRender() {
+        const renderLoop = () => {
+            this.statsOn();
+            this.render();
+            this.statsEnd();
+            if(this.isRunning){
+                requestAnimationFrame(renderLoop);
+            }
+        };
+        renderLoop();
+    }
+
+    public async startClothSimulation() {
+        const clothSize = this.getUserInputClothSize();
+        await this.init();
+        this.initializeClothSimulation(clothSize[0], clothSize[1]);
+        this.beginRender();
     }
 }
