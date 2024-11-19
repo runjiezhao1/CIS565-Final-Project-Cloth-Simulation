@@ -562,6 +562,16 @@ export class ClothRenderer extends Renderer {
     }
 
     createParticles() {
+        //[TODO]: Only for testing maybe be modified later
+        this.uvIndices = [];
+        this.particles = [];
+        this.triangles = [];
+        this.numParticles = 0;
+        this.maxTriangleConnected = 0;
+        this.springs = [];
+        this.maxSpringConnected = 0;
+        
+
         // N * M particles
         //20x20 cloth
         const start_x = 30;
@@ -2144,7 +2154,9 @@ export class ClothRenderer extends Renderer {
             this.statsOn();
             this.render();
             this.statsEnd();
-            requestAnimationFrame(renderLoop);
+            if(this.isRunning){
+                requestAnimationFrame(renderLoop);
+            }
         };
         renderLoop();
     }

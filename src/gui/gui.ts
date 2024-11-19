@@ -2,7 +2,7 @@ import * as dat from 'dat.gui';
 import { parseOBJ } from '../utils';
 import { ObjMesh } from '../obj_mesh';
 import { Camera } from '../stage/camera'; 
-
+//import { main1 } from '../main';
 interface GUISettings 
 {
     sensitivity: number;
@@ -13,7 +13,7 @@ interface GUISettings
 export class GUIController 
 {
     public settings: GUISettings;
-    public gui: dat.GUI;
+    public gui: dat.GUI = new dat.GUI();
     public vertices : number[];
     public indices : number[];
     public updateBuffer : boolean = false;
@@ -28,6 +28,36 @@ export class GUIController
             clothSizeX: 5,
             clothSizeY: 5,
         };
+        //this.initGUI();
+    }
+
+    public initGUI() 
+    {
+        // Add button options here:
+        var params = {
+            loadFile: () => this.loadFile(),
+            startSimulation: () => {
+                //main1();
+                console.log("start cloth simulation!");
+            }
+        };
+        // Folder for attributes of cloth
+        const folder_cloth = this.gui.addFolder('Cloth');
+        folder_cloth.add(this.settings, 'clothSizeX', 1, 100).name('Cloth Size X');
+        folder_cloth.add(this.settings, 'clothSizeY', 1, 100).name('Cloth Size Y');
+        folder_cloth.open();
+
+        // Folder for camera
+        const folder_camera = this.gui.addFolder('Camera');
+        const sensitivityControl = folder_camera.add(this.settings, 'sensitivity', 1, 5).name('Sensitivity');
+        sensitivityControl.onChange((value: number) => {
+            this.camera.sensitivity = value * 0.1; // Update the camera's sensitivity when the slider is changed
+        });
+
+        // other attributes
+        this.gui.add(params, 'loadFile').name("Load Obj File");
+        this.gui.add(params, 'startSimulation').name("Start");
+        
     }
 
     public onBackgroundColorChange(callback: (color: number[]) => void) 

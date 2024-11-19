@@ -1,5 +1,7 @@
 import { ClothRenderer } from "./clothSim/cloth_renderer";
+import { GUIController } from './gui/gui';
 //start cloth simluation
+
 const main1 = async() => {
     // camera control
     const canvas = document.querySelector("canvas#canvas-webgpu") as HTMLCanvasElement;
@@ -47,16 +49,6 @@ const main1 = async() => {
 
     // call this after user set up the size of cloth
     clothRenderer.initializeGUI();
-    startClothSimulation();
-
-    function startClothSimulation() {
-        const clothSize = clothRenderer.getUserInputClothSize();
-        clothRenderer.init().then(() => {
-        // Render cloth simulation
-        clothRenderer.initializeClothSimulation(clothSize[0], clothSize[1]);
-        clothRenderer.beginRender();
-    });
-    }
 }
 
 main1();

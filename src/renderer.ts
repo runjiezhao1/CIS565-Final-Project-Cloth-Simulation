@@ -2,6 +2,7 @@ import { mat4, vec3 } from 'gl-matrix';
 import { Camera } from './stage/camera';
 import { GUIController } from './gui/gui';
 import Stats from 'stats-js';
+import { ClothRenderer } from './clothSim/cloth_renderer';
 
 export class Renderer{
     canvas!: HTMLCanvasElement;
@@ -12,6 +13,7 @@ export class Renderer{
     sampleCount: number = 4;
     depthTexture!: GPUTexture;
     resolveTexture!: GPUTexture;
+    isRunning : boolean = false;
 
     // Camera
     camera!: Camera;
@@ -192,6 +194,16 @@ export class Renderer{
             loadFile: () => this.guiController.loadFile(),
             startSimulation: () => {
                 // TODO: call clothRenderer.startClothSimulation() in main.ts
+                // if(this instanceof ClothRenderer){
+                //     this.clearAllBuffers();
+                // }
+                this.isRunning = true;
+                this.init().then(()=>{
+                    if(this instanceof ClothRenderer){
+                        this.initializeClothSimulation(Math.round(this.renderOptions.clothSizeX), Math.round(this.renderOptions.clothSizeX));
+                        this.beginRender();
+                    }
+                });
                 console.log("start cloth simulation!");
             }
         };
@@ -204,8 +216,13 @@ export class Renderer{
         // Initialize the size of the cloth
         // Folder for attributes of cloth
         const folder_cloth = this.guiController.gui.addFolder('Cloth');
-        folder_cloth.add(this.guiController.settings, 'clothSizeX', 1, 100).name('Cloth Size X');
-        folder_cloth.add(this.guiController.settings, 'clothSizeY', 1, 100).name('Cloth Size Y');
+        folder_cloth.add(this.guiController.settings, 'clothSizeX', 1, 100).name('Cloth Size X').onChange((value: number)=>{
+            this.renderOptions.clothSizeX = value;
+            this.isRunning = false;
+        });
+        // folder_cloth.add(this.guiController.settings, 'clothSizeY', 1, 100).name('Cloth Size Y').onChange((value: number)=>{
+        //     this.renderOptions.clothSizeY = value;
+        // });
         folder_cloth.open();
         // Folder for camera
         const folder_camera = this.guiController.gui.addFolder('Camera');
