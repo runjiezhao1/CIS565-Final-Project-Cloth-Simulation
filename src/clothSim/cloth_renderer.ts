@@ -14,6 +14,8 @@ export class ClothRenderer extends Renderer {
     objLoader : ObjLoader = new ObjLoader();
     objModel : ObjModel = new ObjModel();
     model!: ObjModel;
+    objCloth : ObjModel = new ObjModel();
+    cloth!: ObjModel;
 
     //buffers for objects
     objectPosBuffer!: GPUBuffer;
@@ -28,6 +30,13 @@ export class ClothRenderer extends Renderer {
     mvpBindGroup !: GPUBindGroup;
 
     //cloth information
+    clothPosBuffer!: GPUBuffer;
+    clothIndexBuffer!: GPUBuffer;
+    clothUVBuffer!: GPUBuffer;
+    clothNormalBuffer !: GPUBuffer;
+    clothIndicesLength!: number;
+    clothNumTriangleBuffer!: GPUBuffer;
+
     //model information
     objectIndicesLength!: number;
     ObjectPosBuffer!: GPUBuffer;
@@ -202,12 +211,47 @@ export class ClothRenderer extends Renderer {
 
         return texture;
     }
+    async MakeClothData() {
+        const loader = new ObjLoader();
+        this.cloth = await loader.load('../scenes/skirt.obj', 2.0);
+        console.log("cloth obj file load end");
+
+        var vertArray = new Float32Array(this.cloth.vertices);
+        var indArray = new Uint32Array(this.cloth.indices);
+        var normalArray = new Float32Array(this.cloth.normals);
+        var uvArray = new Float32Array(this.cloth.uvs);
+        this.clothIndicesLength = this.cloth.indices.length;
+        this.clothPosBuffer = makeFloat32ArrayBufferStorage(this.device, vertArray);
+        this.clothIndexBuffer = makeUInt32IndexArrayBuffer(this.device, indArray);
+        this.clothUVBuffer = makeFloat32ArrayBufferStorage(this.device, uvArray);
+        this.clothNormalBuffer = makeFloat32ArrayBufferStorage(this.device, normalArray);
+        const numTriangleData = new Uint32Array([this.cloth.indices.length / 3]);
+
+        this.clothNumTriangleBuffer = this.device.createBuffer({
+            size: numTriangleData.byteLength,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true,
+        });
+        new Uint32Array(this.clothNumTriangleBuffer.getMappedRange()).set(numTriangleData);
+        this.clothNumTriangleBuffer.unmap();
+
+        this.positionBuffer = makeFloat32ArrayBufferStorage(this.device, positionData);
+        this.prevPositionBuffer = makeFloat32ArrayBufferStorage(this.device, positionData);
+        this.velocityBuffer = makeFloat32ArrayBufferStorage(this.device, velocityData);
+        this.forceBuffer = makeFloat32ArrayBufferStorage(this.device, forceData);
+
+        this.vertexNormalBuffer = makeFloat32ArrayBufferStorage(this.device, normalData);
+
+
+    }
 
     async MakeModelData() {
         const loader = new ObjLoader();
-        this.model = await loader.load('../scenes/dragon2.obj', 2.0);
-
-        console.log("object file load end");
+        //this.model = await loader.load('../scenes/dragon2.obj', 2.0);
+        //this.model = await loader.load('../scenes/dress-v5k-f10k-v2.obj', 2.0);
+        //this.model = await loader.load('../scenes/cube.obj', 2.0);
+        this.model = await loader.load('../scenes/skirt.obj', 2.0);
+        console.log("model obj file load end");
 
         var vertArray = new Float32Array(this.model.vertices);
         var indArray = new Uint32Array(this.model.indices);

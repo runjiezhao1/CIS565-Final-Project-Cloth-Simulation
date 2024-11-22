@@ -193,10 +193,6 @@ export class Renderer{
         var params = {
             loadFile: () => this.guiController.loadFile(),
             startSimulation: () => {
-                // TODO: call clothRenderer.startClothSimulation() in main.ts
-                // if(this instanceof ClothRenderer){
-                //     this.clearAllBuffers();
-                // }
                 this.isRunning = true;
                 this.init().then(()=>{
                     if(this instanceof ClothRenderer){
@@ -220,9 +216,9 @@ export class Renderer{
             this.renderOptions.clothSizeX = value;
             this.isRunning = false;
         });
-        // folder_cloth.add(this.guiController.settings, 'clothSizeY', 1, 100).name('Cloth Size Y').onChange((value: number)=>{
-        //     this.renderOptions.clothSizeY = value;
-        // });
+         folder_cloth.add(this.guiController.settings, 'clothSizeY', 1, 100).name('Cloth Size Y').onChange((value: number)=>{
+             this.renderOptions.clothSizeY = value;
+        });
         folder_cloth.open();
         // Folder for camera
         const folder_camera = this.guiController.gui.addFolder('Camera');
