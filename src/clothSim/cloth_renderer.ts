@@ -225,7 +225,7 @@ export class ClothRenderer extends Renderer {
         const numTriangleData = new Uint32Array([this.cloth.indices.length / 3]);
 
         // obj cloth to particle
-        this.uvIndices = [];
+        this.uv = uvArray;
         this.particles = [];
         this.triangles = [];
         this.numParticles = 0;
@@ -240,8 +240,45 @@ export class ClothRenderer extends Renderer {
             const node = new Node(pos, vel);
             this.particles.push(node);
         }
+        // initialize triangles and normals
+        this.normals = new Array(this.particles.length);
+        this.normals.fill(vec3.create());
+        let indicesArray: number[] = [];
+        for (let i = 0; i < indArray.length; i += 3) {
+            const [i1, i2, i3] = [indArray[i], indArray[i + 1], indArray[i + 2]];
+            // Create triangles for structural connections
+            const triangle = new Triangle(i1, i2, i3);
+            this.triangles.push(triangle);
+            // Associate triangles with particles
+            this.particles[i1].triangles.push(triangle);
+            this.particles[i2].triangles.push(triangle);
+            this.particles[i3].triangles.push(triangle);
+            indicesArray.push(i1, i2, i3);
+            // Calculate normal for each triangle and accumulate it for each vertex
+            const v0 = this.particles[i1].position;
+            const v1 = this.particles[i2].position;
+            const v2 = this.particles[i3].position;
+            const normal = calculateNormal(v0, v1, v2);
 
+            vec3.add(this.normals[i1], this.normals[i1], normal);
+            vec3.add(this.normals[i2], this.normals[i2], normal);
+            vec3.add(this.normals[i3], this.normals[i3], normal);
+        }
+        // Normalize the normals for all particles
+        this.normals.forEach(normal => {
+            vec3.normalize(normal, normal);
+        });
+        
+        // [TODO]: Create Springs and store uv, indices, normals for rendering
+        // create springs between adjacent particles based on triangles
+        this.triangles.forEach(triangle => {
+            const [p1, p2, p3] = [this.particles[triangle.v1], this.particles[triangle.v2], this.particles[triangle.v3]];
+            
+            // Create springs between each edge in the triangle
 
+        });
+
+        
         // create buffer for webgpu
         this.clothIndicesLength = this.cloth.indices.length;
         console.log("this object's indices length: " + this.clothIndicesLength / 3);
