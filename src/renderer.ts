@@ -196,7 +196,7 @@ export class Renderer{
                 this.isRunning = true;
                 this.init().then(()=>{
                     if(this instanceof ClothRenderer){
-                        this.initializeClothSimulation(Math.round(this.renderOptions.clothSizeX), Math.round(this.renderOptions.clothSizeX));
+                        this.initializeClothSimulation(Math.round(this.renderOptions.clothSizeX), Math.round(this.renderOptions.clothSizeY));
                         this.beginRender();
                     }
                 });
