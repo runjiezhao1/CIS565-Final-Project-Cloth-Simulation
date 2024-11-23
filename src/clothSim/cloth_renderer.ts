@@ -212,35 +212,43 @@ export class ClothRenderer extends Renderer {
         return texture;
     }
     async MakeClothData() {
+        // Load obj model
         const loader = new ObjLoader();
         this.cloth = await loader.load('../scenes/skirt.obj', 2.0);
         console.log("cloth obj file load end");
 
+        // extract vertex, indices, normal, uv data...
         var vertArray = new Float32Array(this.cloth.vertices);
         var indArray = new Uint32Array(this.cloth.indices);
         var normalArray = new Float32Array(this.cloth.normals);
         var uvArray = new Float32Array(this.cloth.uvs);
+        const numTriangleData = new Uint32Array([this.cloth.indices.length / 3]);
+
+        // obj cloth to particle
+        this.uvIndices = [];
+        this.particles = [];
+        this.triangles = [];
+        this.numParticles = 0;
+        this.maxTriangleConnected = 0;
+        this.springs = [];
+        this.maxSpringConnected = 0;
+        
+        // each vertex is treated as a particle
+        for (let i = 0; i < vertArray.length; i += 3) {
+            const pos = vec3.fromValues(vertArray[i], vertArray[i + 1], vertArray[i + 2]);
+            const vel = vec3.fromValues(0, 0, 0);
+            const node = new Node(pos, vel);
+            this.particles.push(node);
+        }
+
+
+        // create buffer for webgpu
         this.clothIndicesLength = this.cloth.indices.length;
+        console.log("this object's indices length: " + this.clothIndicesLength / 3);
         this.clothPosBuffer = makeFloat32ArrayBufferStorage(this.device, vertArray);
         this.clothIndexBuffer = makeUInt32IndexArrayBuffer(this.device, indArray);
         this.clothUVBuffer = makeFloat32ArrayBufferStorage(this.device, uvArray);
         this.clothNormalBuffer = makeFloat32ArrayBufferStorage(this.device, normalArray);
-        const numTriangleData = new Uint32Array([this.cloth.indices.length / 3]);
-
-        this.clothNumTriangleBuffer = this.device.createBuffer({
-            size: numTriangleData.byteLength,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-            mappedAtCreation: true,
-        });
-        new Uint32Array(this.clothNumTriangleBuffer.getMappedRange()).set(numTriangleData);
-        this.clothNumTriangleBuffer.unmap();
-
-        this.positionBuffer = makeFloat32ArrayBufferStorage(this.device, positionData);
-        this.prevPositionBuffer = makeFloat32ArrayBufferStorage(this.device, positionData);
-        this.velocityBuffer = makeFloat32ArrayBufferStorage(this.device, velocityData);
-        this.forceBuffer = makeFloat32ArrayBufferStorage(this.device, forceData);
-
-        this.vertexNormalBuffer = makeFloat32ArrayBufferStorage(this.device, normalData);
 
 
     }
