@@ -269,25 +269,62 @@ export class ClothRenderer extends Renderer {
             vec3.normalize(normal, normal);
         });
         
-        // [TODO]: Create Springs and store uv, indices, normals for rendering
+        // [Debug]: Create Springs and store uv, indices, normals for rendering
         // create springs between adjacent particles based on triangles
         this.triangles.forEach(triangle => {
             const [p1, p2, p3] = [this.particles[triangle.v1], this.particles[triangle.v2], this.particles[triangle.v3]];
             
             // Create springs between each edge in the triangle
+            const sp1 = new Spring(
+                p1, p2, this.structuralKs, this.kD, "structural", triangle.v1, triangle.v2
+            );
+            sp1.targetIndex1 = this.particles[sp1.index1].springs.length;
+            sp1.targetIndex2 = this.particles[sp1.index2].springs.length;
+            this.springs.push(sp1);
+            this.particles[sp1.index1].springs.push(sp1);
+            this.particles[sp1.index2].springs.push(sp1);
 
+            const sp2 = new Spring(
+                p2, p3, this.structuralKs, this.kD, "structural", triangle.v2, triangle.v3
+            );
+            sp2.targetIndex1 = this.particles[sp2.index1].springs.length;
+            sp2.targetIndex2 = this.particles[sp2.index2].springs.length;
+            this.springs.push(sp2);
+            this.particles[sp2.index1].springs.push(sp2);
+            this.particles[sp2.index2].springs.push(sp2);
+
+            const sp3 = new Spring(
+                p3, p1, this.structuralKs, this.kD, "structural", triangle.v3, triangle.v1
+            );
+            sp3.targetIndex1 = this.particles[sp3.index1].springs.length;
+            sp3.targetIndex2 = this.particles[sp3.index2].springs.length;
+            this.springs.push(sp3);
+            this.particles[sp3.index1].springs.push(sp3);
+            this.particles[sp3.index2].springs.push(sp3);
         });
+        // store indicis, and normal for rendering
+        this.triangleIndices = new Uint32Array(indicesArray);
+        this.numParticles = this.particles.length;
+        console.log("OBJ cloth data loaded as particles with: " + this.numParticles + "particles.");
 
-        
-        // create buffer for webgpu
-        this.clothIndicesLength = this.cloth.indices.length;
-        console.log("this object's indices length: " + this.clothIndicesLength / 3);
-        this.clothPosBuffer = makeFloat32ArrayBufferStorage(this.device, vertArray);
-        this.clothIndexBuffer = makeUInt32IndexArrayBuffer(this.device, indArray);
-        this.clothUVBuffer = makeFloat32ArrayBufferStorage(this.device, uvArray);
-        this.clothNormalBuffer = makeFloat32ArrayBufferStorage(this.device, normalArray);
+        for (let i = 0; i < this.particles.length; i++) {
+            let nConnectedTriangle = this.particles[i].triangles.length;
+            this.maxTriangleConnected = Math.max(this.maxTriangleConnected, nConnectedTriangle);
+        }
+        console.log("maxTriangleConnetced : #", this.maxTriangleConnected);
 
+        for (let i = 0; i < this.particles.length; i++) {
+            let nConnectedSpring = this.particles[i].springs.length;
+            this.maxSpringConnected = Math.max(this.maxSpringConnected, nConnectedSpring);
+        }
+        for (let i = 0; i < this.springs.length; i++) {
+            var sp = this.springs[i];
 
+            sp.targetIndex1 += (this.maxSpringConnected * sp.index1);
+            sp.targetIndex2 += (this.maxSpringConnected * sp.index2);
+        }
+        console.log("maxSpringConnected : #", this.maxSpringConnected);
+        console.log("make #", this.springs.length, " spring create success");
     }
 
     async MakeModelData() {
@@ -497,8 +534,9 @@ export class ClothRenderer extends Renderer {
         this.bendKs = bendKs;
         this.kD = kd;
 
-        this.createParticles();
-        this.createSprings();
+        //this.createParticles();
+        //this.createSprings();
+        this.MakeClothData();
     }
 
     createSprings(){
