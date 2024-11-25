@@ -214,7 +214,8 @@ export class ClothRenderer extends Renderer {
     async MakeClothData() {
         // Load obj model
         const loader = new ObjLoader();
-        this.cloth = await loader.load('../scenes/skirt.obj', 2.0);
+        //this.cloth = await loader.load('../scenes/skirt.obj', 3.0);
+        this.cloth = await loader.load('../scenes/cloth_test3.obj', 3.0);
         console.log("cloth obj file load end");
 
         // extract vertex, indices, normal, uv data...
@@ -307,8 +308,10 @@ export class ClothRenderer extends Renderer {
         this.numParticles = this.particles.length;
         console.log("OBJ cloth data loaded as particles with: " + this.numParticles + "particles.");
 
+        // [DEBUG!] check the triangle numbers in each particle[i]
         for (let i = 0; i < this.particles.length; i++) {
             let nConnectedTriangle = this.particles[i].triangles.length;
+            console.log("numbers of current connected triangles: " + nConnectedTriangle);
             this.maxTriangleConnected = Math.max(this.maxTriangleConnected, nConnectedTriangle);
         }
         console.log("maxTriangleConnetced : #", this.maxTriangleConnected);
@@ -331,7 +334,7 @@ export class ClothRenderer extends Renderer {
         const loader = new ObjLoader();
         //this.model = await loader.load('../scenes/dragon2.obj', 2.0);
         //this.model = await loader.load('../scenes/dress-v5k-f10k-v2.obj', 2.0);
-        //this.model = await loader.load('../scenes/cube.obj', 2.0);
+        //this.model = await loader.load('../scenes/wahoo.obj', 2.0);
         this.model = await loader.load('../scenes/skirt.obj', 2.0);
         console.log("model obj file load end");
 
@@ -676,6 +679,7 @@ export class ClothRenderer extends Renderer {
 
         for (let i = 0; i < this.particles.length; i++) {
             let nConnectedSpring = this.particles[i].springs.length;
+            //console.log("numbers of current connected springs: " + nConnectedSpring);
             this.maxSpringConnected = Math.max(this.maxSpringConnected, nConnectedSpring);
         }
         for (let i = 0; i < this.springs.length; i++) {
@@ -794,9 +798,10 @@ export class ClothRenderer extends Renderer {
         console.log("make #", this.numParticles, " particles create success");
         for (let i = 0; i < this.particles.length; i++) {
             let nConnectedTriangle = this.particles[i].triangles.length;
+            console.log("numbers of current connected triangles: " + nConnectedTriangle);
             this.maxTriangleConnected = Math.max(this.maxTriangleConnected, nConnectedTriangle);
         }
-        console.log(this.maxTriangleConnected);
+        console.log("maxTriangleConnetced : #", this.maxTriangleConnected);
     }
 
     createClothBuffers(){
