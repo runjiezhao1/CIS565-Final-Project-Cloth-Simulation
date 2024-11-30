@@ -334,8 +334,8 @@ export class ClothRenderer extends Renderer {
         const loader = new ObjLoader();
         //this.model = await loader.load('../scenes/dragon2.obj', 2.0);
         //this.model = await loader.load('../scenes/dress-v5k-f10k-v2.obj', 2.0);
-        //this.model = await loader.load('../scenes/wahoo.obj', 2.0);
-        this.model = await loader.load('../scenes/skirt.obj', 2.0);
+        this.model = await loader.load('../scenes/wahoo.obj', 2.0);
+        //this.model = await loader.load('../scenes/skirt.obj', 2.0);
         console.log("model obj file load end");
 
         var vertArray = new Float32Array(this.model.vertices);
@@ -537,9 +537,9 @@ export class ClothRenderer extends Renderer {
         this.bendKs = bendKs;
         this.kD = kd;
 
-        //this.createParticles();
-        //this.createSprings();
-        this.MakeClothData();
+        this.createParticles();
+        this.createSprings();
+        //this.MakeClothData();
     }
 
     createSprings(){
@@ -2268,7 +2268,7 @@ export class ClothRenderer extends Renderer {
     }
 
     async initializeClothSimulation(clothSizeX: number, clothSizeY: number) {
-        this.createClothInfo(clothSizeX, clothSizeY, 500.0, 250.0, 1500.0, 0.3);
+        this.createClothInfo(clothSizeX, clothSizeY,  555000.0, 545000.0, 550000.0, 1000);
         this.createClothBuffers();
         this.createRenderPipeline();
         this.createSpringPipeline();
