@@ -89,14 +89,14 @@ export class ParticleShader {
         specularStrength: f32,
         shininess: f32,
     };
-    @binding(4) @group(0) var<uniform> lightUBO: LightData; // Light 정보 바인딩
+    @binding(4) @group(0) var<uniform> lightUBO: LightData; // Light
     @binding(5) @group(0) var<uniform> alpha: f32;
     
     struct VertexOutput {
         @builtin(position) Position : vec4<f32>,
         @location(0) TexCoord : vec2<f32>,
         @location(1) Normal : vec3<f32>,
-        @location(2) FragPos : vec3<f32>, // 프래그먼트 위치 추가
+        @location(2) FragPos : vec3<f32>, 
     };
     
     @vertex
@@ -105,14 +105,14 @@ export class ParticleShader {
         output.Position = transformUBO.projection * transformUBO.view * transformUBO.model * vec4<f32>(vertexPosition, 1.0);
         output.TexCoord = vertexTexCoord;
         output.Normal = (transformUBO.model * vec4<f32>(vertexNormal, 0.0)).xyz;
-        output.FragPos = (transformUBO.model * vec4<f32>(vertexPosition, 1.0)).xyz; // 월드 공간 위치 계산
+        output.FragPos = (transformUBO.model * vec4<f32>(vertexPosition, 1.0)).xyz; 
         return output;
     }
     
     @fragment
     fn fs_main(@location(0) TexCoord : vec2<f32>, @location(1) Normal : vec3<f32>, @location(2) FragPos: vec3<f32>) -> @location(0) vec4<f32> {            
-        // let ambientStrength: f32 = 0.001; // 환경광 강도를 적절히 조절
-        // let ambientColor: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0) * ambientStrength; // 환경광 색상을 자연스러운 톤으로 조정
+        // let ambientStrength: f32 = 0.001;
+        // let ambientColor: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0) * ambientStrength;
         // var lightPos: vec3<f32> = lightUBO.position;
         // let lightColor: vec4<f32> = lightUBO.color;
         // let lightIntensity: f32 = lightUBO.intensity;
@@ -129,7 +129,7 @@ export class ParticleShader {
             
         //     let lightDir: vec3<f32> = normalize(lightPos - FragPos);
         //     let diff: f32 = max(dot(norm, lightDir), 0.0);
-        //     let diffuse: vec4<f32> = lightColor * texColor * diff * lightIntensity; // 난반사 강도를 조정하여 디테일 강화
+        //     let diffuse: vec4<f32> = lightColor * texColor * diff * lightIntensity;
             
             
         //     let reflectDir: vec3<f32> = reflect(-lightDir, norm);
@@ -139,30 +139,29 @@ export class ParticleShader {
         //     finalColor = finalColor + diffuse + specular;
         // }
         
-        // finalColor.a = 0.8; // 텍스처의 알파 값을 최종 색상의 알파 값으로 설정
+        // finalColor.a = 0.8;
         // return finalColor;
 
         let lightPos: vec3<f32> = lightUBO.position;
         let lightColor: vec4<f32> = lightUBO.color;
         let lightIntensity: f32 = lightUBO.intensity;
         
-        // 주변광 계산
+
         //let ambientColor: vec4<f32> = vec4<f32>(0.513725, 0.435294, 1.0, 1.0) * 0.001;
         let ambientColor: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0) * 0.001;
     
-        // // diffuse 계산
+        // // diffuse
         let norm: vec3<f32> = normalize(Normal);
         let lightDir: vec3<f32> = normalize(lightPos - FragPos);
         let diff: f32 = max(dot(norm, lightDir), 0.0);
         let diffuse: vec4<f32> = lightColor * diff * lightIntensity * vec4<f32>(1.0, 1.0, 1.0, 1.0);
     
-        // // specular 계산
+        // // specular
         let viewDir: vec3<f32> = normalize(cameraPos - FragPos);
         let reflectDir: vec3<f32> = reflect(-lightDir, norm);
         let spec: f32 = pow(max(dot(viewDir, reflectDir), 0.0), lightUBO.shininess);
         let specular: vec4<f32> = lightColor * spec * vec4<f32>(0.429134, 0.429134, 0.429134, 1.0);
 
-        // // 최종 색상 계산
         var finalColor: vec4<f32> = ambientColor + diffuse + specular;
 
         return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);

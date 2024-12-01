@@ -1,7 +1,2 @@
 node_modules
 dist
-*.obj
-*.mtl
-!pyramid.obj
-!dragon2.obj
-!dragon2.mtl

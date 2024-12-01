@@ -218,19 +218,7 @@ export class IntersectionShader {
             positionsCloth[x*3 + 0] = pos.x;
             positionsCloth[x*3 + 1] = pos.y;
             positionsCloth[x*3 + 2] = pos.z;
-        }
-        // if(countBufferData>0)
-        // {
-        //     vel *= -0.5;
-            
-        //     velocities[x*3 + 0] = vel.x;
-        //     velocities[x*3 + 1] = vel.y;
-        //     velocities[x*3 + 2] = vel.z;
-
-        //     positionsCloth[x*3 + 0] = pos.x;
-        //     positionsCloth[x*3 + 1] = pos.y;
-        //     positionsCloth[x*3 + 2] = pos.z;
-        // }      
+        }   
     
         atomicStore(&tempCountBuffer[x].value, i32(0));
         atomicStore(&tempBuffer[x*3+0].value, i32(0));
@@ -321,16 +309,13 @@ export class IntersectionShader {
 
     fn areTrianglesClose(cloth_space1: vec3<i32>, cloth_space2: vec3<i32>, cloth_space3: vec3<i32>,
         object_space1: vec3<i32>, object_space2: vec3<i32>, object_space3: vec3<i32>) -> bool {
-        let minDistanceSquared = 100.0; // 충돌 검사를 할 최소 거리의 제곱값입니다. 10 단위로 10*10 = 100 입니다.
+        let minDistanceSquared = 100.0; 
 
-        // 각 삼각형의 공간 좌표의 중심점을 계산합니다.
         let cloth_center = (cloth_space1 + cloth_space2 + cloth_space3) / 3;
         let object_center = (object_space1 + object_space2 + object_space3) / 3;
 
-        // 두 중심점 사이의 거리를 계산합니다.
         let distanceSquared = distanceSquared(cloth_center, object_center);
 
-        // 두 삼각형의 중심점 사이의 거리가 충분히 가깝다면 true를 반환합니다.
         return distanceSquared < minDistanceSquared;
     }
 
@@ -390,13 +375,6 @@ export class IntersectionShader {
     
         // If determinant is near zero, ray lies in plane of triangle otherwise not
         if (det > -epsilon && det < epsilon) {
-            // var c1 = isPointInsideTriangle(src, p0, p1, p2);
-            // var c2 = isPointInsideTriangle(dst, p0, p1, p2);
-
-            // if(c1) {hit = src;}
-            // if(c2) {hit = dst;}
-
-            // return CollisionResult(c1 || c2, hit);
 
             return CollisionResult(false, hit);
         }
@@ -474,8 +452,6 @@ export class IntersectionShader {
         var f1: vec3<u32> = vec3<u32>(u32(cloth_tri_info.v1), u32(cloth_tri_info.v2), u32(cloth_tri_info.v3));
         var f2: vec3<u32> = vec3<u32>(u32(object_tri_info.v1), u32(object_tri_info.v2), u32(object_tri_info.v3));
 
-        //공간 계산
-
         var tri1_vtx: array<vec3<f32>, 3> = array<vec3<f32>, 3>(
             getClothVertexPosition(f1.x),
             getClothVertexPosition(f1.y),
@@ -497,11 +473,8 @@ export class IntersectionShader {
 
         if (!areTriangleSameVoxel(cloth_space1, cloth_space2, cloth_space3,
             object_space1, object_space2, object_space3)) {
-            // 충분히 가까운 공간에 있지 않다면, 충돌 검사를 수행하지 않습니다.
             return;
         }
-
-        //var result = tri_tri_overlap_3D(f1, f2, tri1_vtx, tri2_vtx);
 
         var res1 = intersect(tri2_vtx[0], tri2_vtx[1], tri2_vtx[2], tri1_vtx[0], tri1_vtx[1]);
         var res2 = intersect(tri2_vtx[0], tri2_vtx[1], tri2_vtx[2], tri1_vtx[0], tri1_vtx[2]);
@@ -550,52 +523,7 @@ export class IntersectionShader {
             atomicAdd(&tempBuffer[f1.z * 3 + 2].value, i32(separationVector.z * 100.0));
             atomicAdd(&tempCountBuffer[f1.z].value,i32(1));
         }
-        
-        // if(res1.hit && res2.hit)
-        // {
-        //     var dir1 = normalize(tri1_vtx[0]-res1.point);
-        //     var dir2 = normalize(tri1_vtx[0]-res2.point);
-
-        //     var rPoints1 = res1.point + res1.point * dir1;
-        //     var rPoints2 = res2.point + res2.point * dir2;
-
-        //     var diff = (rPoints1 + rPoints2) / 2.0;
-
-        //     atomicAdd(&tempBuffer[f1.x * 3 + 0].value, i32(diff.x * 100.0));
-        //     atomicAdd(&tempBuffer[f1.x * 3 + 1].value, i32(diff.y * 100.0));
-        //     atomicAdd(&tempBuffer[f1.x * 3 + 2].value, i32(diff.z * 100.0));
-        //     atomicAdd(&tempCountBuffer[f1.x].value,i32(1));
-        // }
-        // if(res1.hit && res3.hit)
-        // {
-        //     var dir1 = normalize(tri1_vtx[1]-res1.point);
-        //     var dir2 = normalize(tri1_vtx[1]-res3.point);
-
-        //     var rPoints1 = res1.point + res1.point * dir1;
-        //     var rPoints2 = res3.point + res3.point * dir2;
-
-        //     var diff = (rPoints1 + rPoints2) / 2.0;
-
-        //     atomicAdd(&tempBuffer[f1.y * 3 + 0].value, i32(diff.x * 100.0));
-        //     atomicAdd(&tempBuffer[f1.y * 3 + 1].value, i32(diff.y * 100.0));
-        //     atomicAdd(&tempBuffer[f1.y * 3 + 2].value, i32(diff.z * 100.0));
-        //     atomicAdd(&tempCountBuffer[f1.y].value,i32(1));
-        // }
-        // if(res2.hit && res3.hit)
-        // {
-        //     var dir1 = normalize(tri1_vtx[2]-res2.point);
-        //     var dir2 = normalize(tri1_vtx[2]-res3.point);
-
-        //     var rPoints1 = res2.point + res2.point * dir1;
-        //     var rPoints2 = res3.point + res3.point * dir2;
-
-        //     var diff = (rPoints1 + rPoints2) / 2.0;
-
-        //     atomicAdd(&tempBuffer[f1.z * 3 + 0].value, i32(diff.x * 100.0));
-        //     atomicAdd(&tempBuffer[f1.z * 3 + 1].value, i32(diff.y * 100.0));
-        //     atomicAdd(&tempBuffer[f1.z * 3 + 2].value, i32(diff.z * 100.0));
-        //     atomicAdd(&tempCountBuffer[f1.z].value,i32(1));
-        // }        
+           
     }
     `;
 }

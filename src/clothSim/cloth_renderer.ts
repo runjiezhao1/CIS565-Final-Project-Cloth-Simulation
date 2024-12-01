@@ -14,6 +14,8 @@ export class ClothRenderer extends Renderer {
     objLoader : ObjLoader = new ObjLoader();
     objModel : ObjModel = new ObjModel();
     model!: ObjModel;
+    objCloth : ObjModel = new ObjModel();
+    cloth!: ObjModel;
 
     //buffers for objects
     objectPosBuffer!: GPUBuffer;
@@ -28,6 +30,13 @@ export class ClothRenderer extends Renderer {
     mvpBindGroup !: GPUBindGroup;
 
     //cloth information
+    clothPosBuffer!: GPUBuffer;
+    clothIndexBuffer!: GPUBuffer;
+    clothUVBuffer!: GPUBuffer;
+    clothNormalBuffer !: GPUBuffer;
+    clothIndicesLength!: number;
+    clothNumTriangleBuffer!: GPUBuffer;
+
     //model information
     objectIndicesLength!: number;
     ObjectPosBuffer!: GPUBuffer;
@@ -202,12 +211,132 @@ export class ClothRenderer extends Renderer {
 
         return texture;
     }
+    async MakeClothData() {
+        // Load obj model
+        const loader = new ObjLoader();
+        //this.cloth = await loader.load('../scenes/skirt.obj', 3.0);
+        this.cloth = await loader.load('../scenes/cloth_test3.obj', 3.0);
+        console.log("cloth obj file load end");
+
+        // extract vertex, indices, normal, uv data...
+        var vertArray = new Float32Array(this.cloth.vertices);
+        var indArray = new Uint32Array(this.cloth.indices);
+        var normalArray = new Float32Array(this.cloth.normals);
+        var uvArray = new Float32Array(this.cloth.uvs);
+        const numTriangleData = new Uint32Array([this.cloth.indices.length / 3]);
+
+        // obj cloth to particle
+        this.uv = uvArray;
+        this.particles = [];
+        this.triangles = [];
+        this.numParticles = 0;
+        this.maxTriangleConnected = 0;
+        this.springs = [];
+        this.maxSpringConnected = 0;
+        
+        // each vertex is treated as a particle
+        for (let i = 0; i < vertArray.length; i += 3) {
+            const pos = vec3.fromValues(vertArray[i], vertArray[i + 1], vertArray[i + 2]);
+            const vel = vec3.fromValues(0, 0, 0);
+            const node = new Node(pos, vel);
+            this.particles.push(node);
+        }
+        // initialize triangles and normals
+        this.normals = new Array(this.particles.length);
+        this.normals.fill(vec3.create());
+        let indicesArray: number[] = [];
+        for (let i = 0; i < indArray.length; i += 3) {
+            const [i1, i2, i3] = [indArray[i], indArray[i + 1], indArray[i + 2]];
+            // Create triangles for structural connections
+            const triangle = new Triangle(i1, i2, i3);
+            this.triangles.push(triangle);
+            // Associate triangles with particles
+            this.particles[i1].triangles.push(triangle);
+            this.particles[i2].triangles.push(triangle);
+            this.particles[i3].triangles.push(triangle);
+            indicesArray.push(i1, i2, i3);
+            // Calculate normal for each triangle and accumulate it for each vertex
+            const v0 = this.particles[i1].position;
+            const v1 = this.particles[i2].position;
+            const v2 = this.particles[i3].position;
+            const normal = calculateNormal(v0, v1, v2);
+
+            vec3.add(this.normals[i1], this.normals[i1], normal);
+            vec3.add(this.normals[i2], this.normals[i2], normal);
+            vec3.add(this.normals[i3], this.normals[i3], normal);
+        }
+        // Normalize the normals for all particles
+        this.normals.forEach(normal => {
+            vec3.normalize(normal, normal);
+        });
+        
+        // [Debug]: Create Springs and store uv, indices, normals for rendering
+        // create springs between adjacent particles based on triangles
+        this.triangles.forEach(triangle => {
+            const [p1, p2, p3] = [this.particles[triangle.v1], this.particles[triangle.v2], this.particles[triangle.v3]];
+            
+            // Create springs between each edge in the triangle
+            const sp1 = new Spring(
+                p1, p2, this.structuralKs, this.kD, "structural", triangle.v1, triangle.v2
+            );
+            sp1.targetIndex1 = this.particles[sp1.index1].springs.length;
+            sp1.targetIndex2 = this.particles[sp1.index2].springs.length;
+            this.springs.push(sp1);
+            this.particles[sp1.index1].springs.push(sp1);
+            this.particles[sp1.index2].springs.push(sp1);
+
+            const sp2 = new Spring(
+                p2, p3, this.structuralKs, this.kD, "structural", triangle.v2, triangle.v3
+            );
+            sp2.targetIndex1 = this.particles[sp2.index1].springs.length;
+            sp2.targetIndex2 = this.particles[sp2.index2].springs.length;
+            this.springs.push(sp2);
+            this.particles[sp2.index1].springs.push(sp2);
+            this.particles[sp2.index2].springs.push(sp2);
+
+            const sp3 = new Spring(
+                p3, p1, this.structuralKs, this.kD, "structural", triangle.v3, triangle.v1
+            );
+            sp3.targetIndex1 = this.particles[sp3.index1].springs.length;
+            sp3.targetIndex2 = this.particles[sp3.index2].springs.length;
+            this.springs.push(sp3);
+            this.particles[sp3.index1].springs.push(sp3);
+            this.particles[sp3.index2].springs.push(sp3);
+        });
+        // store indicis, and normal for rendering
+        this.triangleIndices = new Uint32Array(indicesArray);
+        this.numParticles = this.particles.length;
+        console.log("OBJ cloth data loaded as particles with: " + this.numParticles + "particles.");
+
+        // [DEBUG!] check the triangle numbers in each particle[i]
+        for (let i = 0; i < this.particles.length; i++) {
+            let nConnectedTriangle = this.particles[i].triangles.length;
+            console.log("numbers of current connected triangles: " + nConnectedTriangle);
+            this.maxTriangleConnected = Math.max(this.maxTriangleConnected, nConnectedTriangle);
+        }
+        console.log("maxTriangleConnetced : #", this.maxTriangleConnected);
+
+        for (let i = 0; i < this.particles.length; i++) {
+            let nConnectedSpring = this.particles[i].springs.length;
+            this.maxSpringConnected = Math.max(this.maxSpringConnected, nConnectedSpring);
+        }
+        for (let i = 0; i < this.springs.length; i++) {
+            var sp = this.springs[i];
+
+            sp.targetIndex1 += (this.maxSpringConnected * sp.index1);
+            sp.targetIndex2 += (this.maxSpringConnected * sp.index2);
+        }
+        console.log("maxSpringConnected : #", this.maxSpringConnected);
+        console.log("make #", this.springs.length, " spring create success");
+    }
 
     async MakeModelData() {
         const loader = new ObjLoader();
-        this.model = await loader.load('../scenes/dragon2.obj', 2.0);
-
-        console.log("object file load end");
+        //this.model = await loader.load('../scenes/dragon2.obj', 2.0);
+        //this.model = await loader.load('../scenes/dress-v5k-f10k-v2.obj', 2.0);
+        this.model = await loader.load('../scenes/wahoo.obj', 2.0);
+        //this.model = await loader.load('../scenes/skirt.obj', 2.0);
+        console.log("model obj file load end");
 
         var vertArray = new Float32Array(this.model.vertices);
         var indArray = new Uint32Array(this.model.indices);
@@ -410,6 +539,7 @@ export class ClothRenderer extends Renderer {
 
         this.createParticles();
         this.createSprings();
+        //this.MakeClothData();
     }
 
     createSprings(){
@@ -549,6 +679,7 @@ export class ClothRenderer extends Renderer {
 
         for (let i = 0; i < this.particles.length; i++) {
             let nConnectedSpring = this.particles[i].springs.length;
+            //console.log("numbers of current connected springs: " + nConnectedSpring);
             this.maxSpringConnected = Math.max(this.maxSpringConnected, nConnectedSpring);
         }
         for (let i = 0; i < this.springs.length; i++) {
@@ -667,9 +798,10 @@ export class ClothRenderer extends Renderer {
         console.log("make #", this.numParticles, " particles create success");
         for (let i = 0; i < this.particles.length; i++) {
             let nConnectedTriangle = this.particles[i].triangles.length;
+            console.log("numbers of current connected triangles: " + nConnectedTriangle);
             this.maxTriangleConnected = Math.max(this.maxTriangleConnected, nConnectedTriangle);
         }
-        console.log(this.maxTriangleConnected);
+        console.log("maxTriangleConnetced : #", this.maxTriangleConnected);
     }
 
     createClothBuffers(){
@@ -2136,7 +2268,7 @@ export class ClothRenderer extends Renderer {
     }
 
     async initializeClothSimulation(clothSizeX: number, clothSizeY: number) {
-        this.createClothInfo(clothSizeX, clothSizeY, 500.0, 250.0, 1500.0, 0.3);
+        this.createClothInfo(clothSizeX, clothSizeY,  555000.0, 545000.0, 550000.0, 1000);
         this.createClothBuffers();
         this.createRenderPipeline();
         this.createSpringPipeline();
