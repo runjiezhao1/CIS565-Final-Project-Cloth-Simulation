@@ -33,6 +33,8 @@ export class ObjModel {
   indices: number[] = [];
   normals: number[] = [];
   uvs: number[] = [];
+  pureVertices : number[][] = [];
+  pureFaces : number[] = [];
 }
 
 export class ObjLoader {
@@ -61,7 +63,7 @@ export class ObjLoader {
                   break;
           }
       });
-
+      _model.pureVertices = vertexPositions;
       const indexMap = new Map<string, number>();
       let currentIndex = 0;
 
@@ -73,6 +75,7 @@ export class ObjLoader {
                   return indexMap.get(key)!;
               } else {
                   const position = vertexPositions[pos];
+                  _model.pureFaces.push(pos);
                   _model.vertices.push(...position);
                   const _uv = uv[tex];
                   if(_uv===undefined){
