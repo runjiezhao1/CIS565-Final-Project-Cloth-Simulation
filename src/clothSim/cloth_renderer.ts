@@ -211,18 +211,20 @@ export class ClothRenderer extends Renderer {
 
         return texture;
     }
+
     async MakeClothData() {
         // Load obj model
         const loader = new ObjLoader();
         //this.cloth = await loader.load('../scenes/skirt.obj', 3.0);
         this.cloth = await loader.load('../scenes/cloth_test3.obj', 3.0);
         console.log("cloth obj file load end");
-
+        console.log(this.cloth);
         // extract vertex, indices, normal, uv data...
         var vertArray = new Float32Array(this.cloth.vertices);
         var indArray = new Uint32Array(this.cloth.indices);
         var normalArray = new Float32Array(this.cloth.normals);
         var uvArray = new Float32Array(this.cloth.uvs);
+        var pureFaces = new Uint32Array(this.cloth.pureFaces);
         const numTriangleData = new Uint32Array([this.cloth.indices.length / 3]);
 
         // obj cloth to particle
@@ -235,8 +237,8 @@ export class ClothRenderer extends Renderer {
         this.maxSpringConnected = 0;
         
         // each vertex is treated as a particle
-        for (let i = 0; i < vertArray.length; i += 3) {
-            const pos = vec3.fromValues(vertArray[i], vertArray[i + 1], vertArray[i + 2]);
+        for (let i = 0; i < this.cloth.pureVertices.length; i ++) {
+            const pos = vec3.fromValues(this.cloth.pureVertices[i][0], this.cloth.pureVertices[i][1], this.cloth.pureVertices[i][2]);
             const vel = vec3.fromValues(0, 0, 0);
             const node = new Node(pos, vel);
             this.particles.push(node);
@@ -245,8 +247,9 @@ export class ClothRenderer extends Renderer {
         this.normals = new Array(this.particles.length);
         this.normals.fill(vec3.create());
         let indicesArray: number[] = [];
-        for (let i = 0; i < indArray.length; i += 3) {
-            const [i1, i2, i3] = [indArray[i], indArray[i + 1], indArray[i + 2]];
+        //直接用obj里面的vertex normal
+        for (let i = 0; i < pureFaces.length; i += 3) {
+            const [i1, i2, i3] = [pureFaces[i], pureFaces[i + 1], pureFaces[i + 2]];
             // Create triangles for structural connections
             const triangle = new Triangle(i1, i2, i3);
             this.triangles.push(triangle);
@@ -269,7 +272,7 @@ export class ClothRenderer extends Renderer {
         this.normals.forEach(normal => {
             vec3.normalize(normal, normal);
         });
-        
+        console.log("display normals ", this.normals);
         // [Debug]: Create Springs and store uv, indices, normals for rendering
         // create springs between adjacent particles based on triangles
         this.triangles.forEach(triangle => {
@@ -334,9 +337,10 @@ export class ClothRenderer extends Renderer {
         const loader = new ObjLoader();
         //this.model = await loader.load('../scenes/dragon2.obj', 2.0);
         //this.model = await loader.load('../scenes/dress-v5k-f10k-v2.obj', 2.0);
-        this.model = await loader.load('../scenes/wahoo.obj', 2.0);
+        this.model = await loader.load('../scenes/wahoo.obj', 1);
         //this.model = await loader.load('../scenes/skirt.obj', 2.0);
         console.log("model obj file load end");
+        console.log(this.model);
 
         var vertArray = new Float32Array(this.model.vertices);
         var indArray = new Uint32Array(this.model.indices);
@@ -529,7 +533,7 @@ export class ClothRenderer extends Renderer {
     }
 
     //three types of springs connecting all particles: structural, shear and flexion
-    createClothInfo(x: number, y: number, structuralKs: number = 5000.0, shearKs: number = 2000.0, bendKs: number = 500.0, kd: number = 0.25){
+    async createClothInfo(x: number, y: number, structuralKs: number = 5000.0, shearKs: number = 2000.0, bendKs: number = 500.0, kd: number = 0.25){
         this.N = x;
         this.M = y;
         this.structuralKs = structuralKs;
@@ -537,9 +541,9 @@ export class ClothRenderer extends Renderer {
         this.bendKs = bendKs;
         this.kD = kd;
 
-        this.createParticles();
-        this.createSprings();
-        //this.MakeClothData();
+        //this.createParticles();
+        //this.createSprings();
+        await this.MakeClothData();
     }
 
     createSprings(){
@@ -733,7 +737,7 @@ export class ClothRenderer extends Renderer {
                 this.particles.push(node);
             }
         }
-        
+        console.log(this.particles);
         const combinedVertices: number[] = [];
         this.particles.forEach((particle, index) => {
             combinedVertices.push(...particle.position, ...this.uvIndices[index]);
@@ -2268,7 +2272,7 @@ export class ClothRenderer extends Renderer {
     }
 
     async initializeClothSimulation(clothSizeX: number, clothSizeY: number) {
-        this.createClothInfo(clothSizeX, clothSizeY,  555000.0, 545000.0, 550000.0, 1000);
+        await this.createClothInfo(clothSizeX, clothSizeY,  555000.0, 545000.0, 550000.0, 1000);
         this.createClothBuffers();
         this.createRenderPipeline();
         this.createSpringPipeline();
