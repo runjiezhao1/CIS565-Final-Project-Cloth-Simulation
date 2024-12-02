@@ -1,5 +1,5 @@
 import { Renderer } from "../renderer";
-import { calculateNormal, makeFloat32ArrayBuffer, makeFloat32ArrayBufferStorage, makeUInt32IndexArrayBuffer, ObjLoader, ObjModel } from "../utils";
+import { calculateNormal, ImageLoader, makeFloat32ArrayBuffer, makeFloat32ArrayBufferStorage, makeUInt32IndexArrayBuffer, ObjLoader, ObjModel } from "../utils";
 import { cubeSrc, objSrc, PDSrc } from "../shaders/shader";
 import { vec3 } from "gl-matrix";
 import { Node, Triangle, Spring } from "../PhysicsSystem/Particles";
@@ -215,8 +215,8 @@ export class ClothRenderer extends Renderer {
     async MakeClothData() {
         // Load obj model
         const loader = new ObjLoader();
-        this.cloth = await loader.load('../scenes/skirt.obj', 3.0);
-        //this.cloth = await loader.load('../scenes/cloth_test3.obj', 3.0);
+        this.cloth = await loader.load('../scenes/dress_small.obj', 3);
+        //this.cloth = await loader.load('../scenes/skirt.obj', 3.0);
         console.log("cloth obj file load end");
         console.log(this.cloth);
         // extract vertex, indices, normal, uv data...
@@ -335,9 +335,9 @@ export class ClothRenderer extends Renderer {
 
     async MakeModelData() {
         const loader = new ObjLoader();
-        //this.model = await loader.load('../scenes/dragon2.obj', 2.0);
+        this.model = await loader.load('../scenes/dragon2.obj', 0.1);
         //this.model = await loader.load('../scenes/dress-v5k-f10k-v2.obj', 2.0);
-        this.model = await loader.load('../scenes/wahoo.obj', 1);
+        //this.model = await loader.load('../scenes/human.obj', 1);
         //this.model = await loader.load('../scenes/skirt.obj', 2.0);
         console.log("model obj file load end");
         console.log(this.model);
@@ -355,6 +355,18 @@ export class ClothRenderer extends Renderer {
         this.objectUVBuffer = makeFloat32ArrayBufferStorage(this.device, uvArray);
         this.objectNormalBuffer = makeFloat32ArrayBufferStorage(this.device, normalArray);
 
+        /*
+        // Create and load a texture
+        const imageLoader = new ImageLoader(this.device);
+        const texture = await imageLoader.loadImage('../textures/basecolor.jpg');
+        const sampler = this.device.createSampler({
+            magFilter: 'linear',
+            minFilter: 'linear',
+            mipmapFilter: 'linear',
+            addressModeU: 'repeat',
+            addressModeV: 'repeat',
+        });
+        */
         const numTriangleData = new Uint32Array([this.model.indices.length / 3]);
         this.objectNumTriangleBuffer = this.device.createBuffer({
             size: numTriangleData.byteLength,

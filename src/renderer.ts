@@ -45,7 +45,7 @@ export class Renderer{
     structural_Ks: number = 5000;
     shear_Ks: number = 2000;
     bend_Ks: number = 500;
-    kd: number = 100;
+    kd: number = 0.01;
 
     renderOptions = {
         sensitivity: this.sensitivity,
@@ -243,7 +243,7 @@ export class Renderer{
         folder_cloth.add(this.guiController.settings, 'shearKs', 2000, 500000).name('shear Ks').onChange((value: number)=>{
             this.renderOptions.shearKs = value;
         });
-        folder_cloth.add(this.guiController.settings, 'kd', 1, 1000).name('kd').onChange((value: number)=>{
+        folder_cloth.add(this.guiController.settings, 'kd', 0.01, 1000).name('kd').onChange((value: number)=>{
             this.renderOptions.kd = value;
         });
         folder_cloth.open();

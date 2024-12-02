@@ -36,7 +36,7 @@ export class GUIController
             structuralKs: 5000,
             shearKs: 2000,
             bendKs: 500,
-            kd: 1,
+            kd: 0.01,
         };
     }
 

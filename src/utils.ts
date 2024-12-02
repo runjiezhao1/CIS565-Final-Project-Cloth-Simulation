@@ -209,3 +209,58 @@ export function calculateNormal(v0: vec3, v1: vec3, v2: vec3) {
 
   return normal;
 }
+
+export class ImageLoader {
+  device: GPUDevice;
+
+  constructor(device: GPUDevice) {
+      this.device = device;
+  }
+
+  async loadImage(url: string): Promise<GPUTexture> {
+      const image = await this.loadImageElement(url);
+      const texture = this.createTextureFromImage(image);
+      return texture;
+  }
+
+  private loadImageElement(url: string): Promise<HTMLImageElement> {
+      return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.src = url;
+          image.onload = () => resolve(image);
+          image.onerror = reject;
+      });
+  }
+
+  private createTextureFromImage(image: HTMLImageElement): GPUTexture {
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+          throw new Error("Failed to create canvas 2D context");
+      }
+
+      context.drawImage(image, 0, 0);
+
+      const imageData = context.getImageData(0, 0, image.width, image.height);
+      const texture = this.device.createTexture({
+          size: [image.width, image.height, 1],
+          format: 'rgba8unorm',
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+
+      this.device.queue.writeTexture(
+          { texture },
+          imageData.data,
+          {
+              bytesPerRow: image.width * 4,
+              rowsPerImage: image.height,
+          },
+          [image.width, image.height, 1]
+      );
+
+      return texture;
+  }
+}
