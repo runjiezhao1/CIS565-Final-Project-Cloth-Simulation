@@ -205,7 +205,7 @@ export class ClothRenderer extends Renderer {
 
     async MakeModelData() {
         const loader = new ObjLoader();
-        this.model = await loader.load('../scenes/dragon2.obj', 2.0);
+        this.model = await loader.load('../scenes/wahoo.obj', 2.0);
 
         console.log("object file load end");
 
@@ -572,10 +572,8 @@ export class ClothRenderer extends Renderer {
         this.maxSpringConnected = 0;
         
 
-        // N * M particles
-        //20x20 cloth
-        const start_x = 30;
-        const start_y = 30;
+        const start_x = 40;
+        const start_y = 40;
 
         const dist_x = (this.xSize / this.N);
         const dist_y = (this.ySize / this.M);
@@ -1396,7 +1394,7 @@ export class ClothRenderer extends Renderer {
 
     async createModelInfo(){
         //hard code the obj file here
-        this.objModel = await this.objLoader.load("../scenes/dragon2.obj",0.1);
+        this.objModel = await this.objLoader.load("../scenes/wahoo.obj",0.1);
         var vertArray = new Float32Array(this.objModel.vertices);
         var indArray = new Uint32Array(this.objModel.indices);
         var uvArray = new Float32Array(this.objModel.uvs);
