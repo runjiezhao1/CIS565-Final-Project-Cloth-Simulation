@@ -215,8 +215,8 @@ export class ClothRenderer extends Renderer {
     async MakeClothData() {
         // Load obj model
         const loader = new ObjLoader();
-        //this.cloth = await loader.load('../scenes/skirt.obj', 3.0);
-        this.cloth = await loader.load('../scenes/cloth_test3.obj', 3.0);
+        this.cloth = await loader.load('../scenes/skirt.obj', 3.0);
+        //this.cloth = await loader.load('../scenes/cloth_test3.obj', 3.0);
         console.log("cloth obj file load end");
         console.log(this.cloth);
         // extract vertex, indices, normal, uv data...
@@ -533,7 +533,7 @@ export class ClothRenderer extends Renderer {
     }
 
     //three types of springs connecting all particles: structural, shear and flexion
-    async createClothInfo(x: number, y: number, structuralKs: number = 5000.0, shearKs: number = 2000.0, bendKs: number = 500.0, kd: number = 0.25){
+    async createClothInfo(x: number, y: number, structuralKs: number, shearKs: number, bendKs: number, kd: number){
         this.N = x;
         this.M = y;
         this.structuralKs = structuralKs;
@@ -2271,8 +2271,10 @@ export class ClothRenderer extends Renderer {
         this.device.queue.submit([this.commandEncoder.finish()]);
     }
 
-    async initializeClothSimulation(clothSizeX: number, clothSizeY: number) {
-        await this.createClothInfo(clothSizeX, clothSizeY,  555000.0, 545000.0, 550000.0, 1000);
+    async initializeClothSimulation(clothSizeX: number, clothSizeY: number, structuralKs: number, shearKs: number, bendKs: number, kd: number) {
+        //structuralKs: number = 5000.0, shearKs: number = 2000.0, bendKs: number = 500.0, kd: number = 0.25
+        //await this.createClothInfo(clothSizeX, clothSizeY,  555000.0, 545000.0, 550000.0, 1000);
+        await this.createClothInfo(clothSizeX, clothSizeY, structuralKs, shearKs, bendKs, kd);
         this.createClothBuffers();
         this.createRenderPipeline();
         this.createSpringPipeline();

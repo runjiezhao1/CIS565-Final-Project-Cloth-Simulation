@@ -8,6 +8,11 @@ interface GUISettings
     sensitivity: number;
     clothSizeX: number;
     clothSizeY: number;
+    distance: number;
+    structuralKs: number;
+    bendKs: number;
+    shearKs: number;
+    kd: number;
 }
 
 export class GUIController 
@@ -27,8 +32,12 @@ export class GUIController
             sensitivity: 1.0,
             clothSizeX: 5,
             clothSizeY: 5,
+            distance: 10,
+            structuralKs: 5000,
+            shearKs: 2000,
+            bendKs: 500,
+            kd: 1,
         };
-        //this.initGUI();
     }
 
     public initGUI() 

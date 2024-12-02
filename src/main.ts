@@ -41,7 +41,8 @@ const main1 = async() => {
         lastMouseY = event.clientY;
     });
     canvas.addEventListener('wheel', (event) => {
-        clothRenderer.zoomCamera(event.deltaY / 100);
+        const value = event.deltaY / 100;
+        clothRenderer.zoomCamera(value);
     });
 
     // Cloth Renderer

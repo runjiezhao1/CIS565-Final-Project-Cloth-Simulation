@@ -66,6 +66,11 @@ export class Camera {
         this.updateViewMatrix();
     }
 
+    setDistance(distance: number) {
+        this.radius = distance;
+        this.updateViewMatrix();
+    }
+
     moveRight(amount: number) {
         const right = vec3.create();
         const forward = vec3.subtract(vec3.create(), this.target, this.position);

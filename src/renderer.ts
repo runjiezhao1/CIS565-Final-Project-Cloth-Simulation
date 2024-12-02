@@ -42,11 +42,19 @@ export class Renderer{
     // cloth
     cloth_SizeX: number = 5;
     cloth_SizeY: number = 5;
+    structural_Ks: number = 5000;
+    shear_Ks: number = 2000;
+    bend_Ks: number = 500;
+    kd: number = 100;
 
     renderOptions = {
         sensitivity: this.sensitivity,
         clothSizeX: this.cloth_SizeX,
         clothSizeY: this.cloth_SizeY,
+        structuralKs: this.structural_Ks,
+        shearKs: this.shear_Ks,
+        bendKs: this.bend_Ks,
+        kd: this.kd,
 
         wireFrame: false,
         camPosX: this.camera_position[0],
@@ -196,7 +204,14 @@ export class Renderer{
                 this.isRunning = true;
                 this.init().then(()=>{
                     if(this instanceof ClothRenderer){
-                        this.initializeClothSimulation(Math.round(this.renderOptions.clothSizeX), Math.round(this.renderOptions.clothSizeY));
+                        this.initializeClothSimulation(
+                            Math.round(this.renderOptions.clothSizeX),
+                            Math.round(this.renderOptions.clothSizeY),
+                            this.renderOptions.structuralKs,
+                            this.renderOptions.shearKs,
+                            this.renderOptions.bendKs,
+                            this.renderOptions.kd
+                        );
                         this.beginRender();
                     }
                 });
@@ -216,8 +231,20 @@ export class Renderer{
             this.renderOptions.clothSizeX = value;
             this.isRunning = false;
         });
-         folder_cloth.add(this.guiController.settings, 'clothSizeY', 1, 100).name('Cloth Size Y').onChange((value: number)=>{
+        folder_cloth.add(this.guiController.settings, 'clothSizeY', 1, 100).name('Cloth Size Y').onChange((value: number)=>{
              this.renderOptions.clothSizeY = value;
+        });
+        folder_cloth.add(this.guiController.settings, 'structuralKs', 5000, 500000).name('Structural Ks').onChange((value: number)=>{
+            this.renderOptions.structuralKs = value;
+        });
+        folder_cloth.add(this.guiController.settings, 'bendKs', 500, 500000).name('bend Ks').onChange((value: number)=>{
+            this.renderOptions.bendKs = value;
+        });
+        folder_cloth.add(this.guiController.settings, 'shearKs', 2000, 500000).name('shear Ks').onChange((value: number)=>{
+            this.renderOptions.shearKs = value;
+        });
+        folder_cloth.add(this.guiController.settings, 'kd', 1, 1000).name('kd').onChange((value: number)=>{
+            this.renderOptions.kd = value;
         });
         folder_cloth.open();
         // Folder for camera
@@ -226,9 +253,13 @@ export class Renderer{
         sensitivityControl.onChange((value: number) => {
             this.camera.sensitivity = value * 0.1;
         });
+        const distanceControl = folder_camera.add(this.guiController.settings, 'distance', 10, 150).name('Distance');
+        distanceControl.onChange((value: number) => {
+            this.camera.setDistance(value);
+        });
         folder_camera.open();
         // other attributes
-        this.guiController.gui.add(params, 'loadFile').name("Load Obj File");
+        this.guiController.gui.add(params, 'loadFile').name("Load File");
         this.guiController.gui.add(params, 'startSimulation').name("Start");
     }
 
