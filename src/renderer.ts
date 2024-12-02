@@ -24,12 +24,15 @@ export class Renderer{
     guiController!: GUIController;
 
     // Light
-    light_position: vec3 = vec3.fromValues(150.0, 500.0, 150.0);
-    light_color: vec3 = vec3.fromValues(0.0, 1.0, 1.0);
+    light_position: vec3 = vec3.fromValues(171.0, 500.0, 500.0);
+    light_color: vec3 = vec3.fromValues(1.0, 1.0, 1.0);
     light_intensity: number = 1.0;
     specular_strength: number = 1.5;
     shininess: number = 1024.0;
     localFrameCount: number = 0;
+    lightPosXControl: any;
+    lightPosYControl: any;
+    lightPosZControl: any;
     /*
     stats = {
         fps: 0,
@@ -258,6 +261,18 @@ export class Renderer{
             this.camera.setDistance(value);
         });
         folder_camera.open();
+        // Folder for light
+        const folder_light = this.guiController.gui.addFolder('Light');
+        folder_light.add(this.guiController.settings, 'lightPosX', -500, 500).name('Light Pos X').onChange((value: number)=>{
+            this.light_position[0] = value;
+        });
+        folder_light.add(this.guiController.settings, 'lightPosY', -500, 500).name('Light Pos Y').onChange((value: number)=>{
+            this.light_position[1] = value;
+        });
+        folder_light.add(this.guiController.settings, 'lightPosZ', -500, 500).name('Light Pos Z').onChange((value: number)=>{
+            this.light_position[2] = value;
+        });
+        folder_light.open();
         // other attributes
         this.guiController.gui.add(params, 'loadFile').name("Load File");
         this.guiController.gui.add(params, 'startSimulation').name("Start");

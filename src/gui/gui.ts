@@ -13,6 +13,9 @@ interface GUISettings
     bendKs: number;
     shearKs: number;
     kd: number;
+    lightPosX: any;
+    lightPosY: any;
+    lightPosZ: any;
 }
 
 export class GUIController 
@@ -37,6 +40,9 @@ export class GUIController
             shearKs: 2000,
             bendKs: 500,
             kd: 0.01,
+            lightPosX: 171.0,
+            lightPosY: 500.0,
+            lightPosZ: 500.0,
         };
     }
 

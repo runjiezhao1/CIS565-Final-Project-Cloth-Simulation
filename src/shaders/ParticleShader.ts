@@ -57,7 +57,7 @@ export class ParticleShader {
             var output: FragmentOutput;
             let modelViewProj = transformUBO.projection * transformUBO.view * transformUBO.model;
             output.Position = modelViewProj * vec4<f32>(vertexInput.position, 1.0);
-            output.Color = vec4<f32>(0.0, 1.0, 0.0, 1.0); // Pass vertex color to fragment shader
+            output.Color = vec4<f32>(1.0, 1.0, 1.0, 1.0); // Pass vertex color to fragment shader
             return output;
         }
 
@@ -148,7 +148,7 @@ export class ParticleShader {
         
 
         //let ambientColor: vec4<f32> = vec4<f32>(0.513725, 0.435294, 1.0, 1.0) * 0.001;
-        let ambientColor: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0) * 0.001;
+        let ambientColor: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0) * 0.1;
     
         // // diffuse
         let norm: vec3<f32> = normalize(Normal);
@@ -158,12 +158,16 @@ export class ParticleShader {
     
         // // specular
         let viewDir: vec3<f32> = normalize(cameraPos - FragPos);
+        let halfwayDir = normalize(lightDir + viewDir);
         let reflectDir: vec3<f32> = reflect(-lightDir, norm);
         let spec: f32 = pow(max(dot(viewDir, reflectDir), 0.0), lightUBO.shininess);
+        let spec2 = pow(max(dot(norm, halfwayDir), 0.0), 32.0);
         let specular: vec4<f32> = lightColor * spec * vec4<f32>(0.429134, 0.429134, 0.429134, 1.0);
+        let specular2 = spec2 * lightColor * lightIntensity;
 
-        var finalColor: vec4<f32> = ambientColor + diffuse + specular;
+        var finalColor: vec4<f32> = ambientColor + diffuse + specular2;
 
+        //return vec4<f32>(1.0,1.0, 1.0, 1.0);
         return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
         
         //return vec4<f32>(diffuse.x, diffuse.y, diffuse.z, 1.0);

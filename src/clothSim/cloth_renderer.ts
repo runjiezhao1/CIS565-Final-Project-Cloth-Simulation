@@ -215,7 +215,7 @@ export class ClothRenderer extends Renderer {
     async MakeClothData() {
         // Load obj model
         const loader = new ObjLoader();
-        this.cloth = await loader.load('../scenes/dress_small.obj', 3);
+        this.cloth = await loader.load('../scenes/Tshirt_high.obj', 1);
         //this.cloth = await loader.load('../scenes/skirt.obj', 3.0);
         console.log("cloth obj file load end");
         console.log(this.cloth);
@@ -335,9 +335,9 @@ export class ClothRenderer extends Renderer {
 
     async MakeModelData() {
         const loader = new ObjLoader();
-        this.model = await loader.load('../scenes/dragon2.obj', 0.1);
+        //this.model = await loader.load('../scenes/dragon2.obj', 0.1);
         //this.model = await loader.load('../scenes/dress-v5k-f10k-v2.obj', 2.0);
-        //this.model = await loader.load('../scenes/human.obj', 1);
+        this.model = await loader.load('../scenes/human_noArm.obj', 1);
         //this.model = await loader.load('../scenes/skirt.obj', 2.0);
         console.log("model obj file load end");
         console.log(this.model);
