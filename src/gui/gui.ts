@@ -16,6 +16,7 @@ interface GUISettings
     lightPosX: any;
     lightPosY: any;
     lightPosZ: any;
+    wireFrame: false;
 }
 
 export class GUIController 
@@ -33,8 +34,8 @@ export class GUIController
         this.gui = new dat.GUI();
         this.settings = {
             sensitivity: 1.0,
-            clothSizeX: 5,
-            clothSizeY: 5,
+            clothSizeX: 40,
+            clothSizeY: 40,
             distance: 10,
             structuralKs: 5000,
             shearKs: 2000,
@@ -43,6 +44,7 @@ export class GUIController
             lightPosX: 171.0,
             lightPosY: 500.0,
             lightPosZ: 500.0,
+            wireFrame: false,
         };
     }
 
