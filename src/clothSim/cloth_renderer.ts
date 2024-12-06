@@ -558,9 +558,9 @@ export class ClothRenderer extends Renderer {
         this.bendKs = bendKs;
         this.kD = kd;
 
-        //this.createParticles();
-        //this.createSprings();
-        await this.MakeClothData();
+        this.createParticles();
+        this.createSprings();
+        //await this.MakeClothData();
     }
 
     createSprings(){

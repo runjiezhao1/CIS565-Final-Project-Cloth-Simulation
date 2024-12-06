@@ -147,20 +147,19 @@ export class IntersectionShader {
 
         var pos = getClothVertexPosition(x);
         var vel = getClothVertexVelocity(x);
-
+        
+        // Object triangle setup
         var object_tri_info = triangleObject[y];
         var f2: vec3<u32> = vec3<u32>(u32(object_tri_info.v1), u32(object_tri_info.v2), u32(object_tri_info.v3));
-
         var tri2_vtx: array<vec3<f32>, 3> = array<vec3<f32>, 3>(
             getObjectVertexPosition(f2.x),
             getObjectVertexPosition(f2.y),
             getObjectVertexPosition(f2.z)
         );
-
         var tri_normal = calculateNormal(tri2_vtx[0], tri2_vtx[1], tri2_vtx[2]);
 
+        // Collision detection logic
         var deltaTime: f32 = 0.001; // Assuming 60 FPS for simplicity
-        
         var next_pos = pos + (vel * deltaTime);
         var prev_pos = pos - (vel * deltaTime);
 
@@ -178,6 +177,18 @@ export class IntersectionShader {
         var targetValue = pos - (vel * deltaTime * 2) * 100.0;
 
         if( (rC && pointInTriangle(bC)) || (rC1 && pointInTriangle(bC1)) || (rC2 && pointInTriangle(bC2)) ){
+            
+            var dampingFactor: f32 = 0.5;
+            vel.y = vel.y * dampingFactor;
+
+            velocities[x*3 + 0] = vel.x;
+            velocities[x*3 + 1] = vel.y;
+            velocities[x*3 + 2] = vel.z;
+            
+            positionsCloth[x*3 + 0] = pos.x;
+            positionsCloth[x*3 + 1] = pos.y;
+            positionsCloth[x*3 + 2] = pos.z;
+        
             atomicAdd(&tempBuffer[x * 3 + 0].value, i32(targetValue.x));
             atomicAdd(&tempBuffer[x * 3 + 1].value, i32(targetValue.y));
             atomicAdd(&tempBuffer[x * 3 + 2].value, i32(targetValue.z));    
@@ -202,10 +213,12 @@ export class IntersectionShader {
         let countBufferData = atomicLoad(&tempCountBuffer[x].value);
 
         var separatePos:vec3<f32> = vec3<f32>((f32(tempX) / 100.0) / f32(countBufferData), (f32(tempY) / 100.0) / f32(countBufferData), (f32(tempZ) / 100.0) / f32(countBufferData));        
-
+        let dampingFactor: f32 = 0.001;
         if(countBufferData>0)
         {
-            vel *= -0.0001;
+            vel.y *= dampingFactor;
+            vel.z *= dampingFactor;
+            vel.x *= dampingFactor;
             
             pos.x += (separatePos.x * 0.03);
             pos.y += (separatePos.y * 0.03);

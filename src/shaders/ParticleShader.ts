@@ -200,6 +200,11 @@ export class ParticleShader {
         positions[index * 3 + 1] = pos.y;
         positions[index * 3 + 2] = pos.z;
     }
+    fn setVelocity(index: u32, velocity: vec3<f32>) {
+        velocities[index * 3 + 0] = velocity.x;
+        velocities[index * 3 + 1] = velocity.y;
+        velocities[index * 3 + 2] = velocity.z;
+    }
 
     @compute 
     @workgroup_size(256)
@@ -213,25 +218,28 @@ export class ParticleShader {
         
         var pos = getPosition(index);
         var vel = getVelocity(index);
-        var f = getForce(index) * 0.1;     
+        var f = getForce(index) * 0.001;     
         
         prevPosition[index*3 + 0] = pos.x;
         prevPosition[index*3 + 1] = pos.y;
         prevPosition[index*3 + 2] = pos.z;  
         
-        var gravity: vec3<f32> = vec3<f32>(0.0, -32.6, 0.0);        
-        var deltaTime: f32 = 0.002; // Assuming 60 FPS for simplicity
+             
+        var deltaTime: f32 = 0.001; // Assuming 60 FPS for simplicity
+        var gravity: vec3<f32> = vec3<f32>(0.0, -9.8, 0.0);   
         vel += ((f + gravity) * deltaTime);
         pos += (vel * deltaTime);
 
         //floor collisions
         if(pos.y < 0.0){
             pos.y = 0.0; 
-            vel.y = 0.0;      
+            vel.y *= -0.1;
+            vel.x *= 0.2;
+            vel.z *= 0.2;
         }
 
         // self-collision detection
-        let collisionRadius: f32 = 0.25;
+        let collisionRadius: f32 = 0.1;
         for (var otherIndex: u32 = 0; otherIndex < arrayLength(&positions) / 3; otherIndex++) {
             var fixed2 = fixed[otherIndex];
             if (otherIndex == index || fixed2 == 1) {
@@ -248,13 +256,35 @@ export class ParticleShader {
                 let correctionVector = normalize(delta) * correction;
 
                 // Resolve collision
-                pos += correctionVector;
-                if (fixed[otherIndex] == 0) {
-                    setPosition(otherIndex, otherPos - correctionVector);
+                pos += correctionVector * 0.5;
+                if (fixed2 == 0) {
+                    let otherNewPos = otherPos - correctionVector * 0.5;
+                    setPosition(otherIndex, otherNewPos);
                 }
+/*
+                // Apply velocity-based correction
+                let relativeVelocity = getVelocity(index) - getVelocity(otherIndex);
+                let velocityAlongNormal = dot(relativeVelocity, normalize(delta));
+                
+                // If the particles are moving towards each other, apply a velocity correction
+                if (velocityAlongNormal < 0.0) {
+                    let restitution = 0.8;  // (0 = no bounce, 1 = full bounce)
+                    let impulse = -velocityAlongNormal * (1.0 + restitution);
+                    let mass1 = 1.0;
+                    let mass2 = 1.0; 
+                    
+                    let velocityCorrection1 = (impulse / mass1) * normalize(delta);
+                    let velocityCorrection2 = (impulse / mass2) * normalize(delta);
+                    
+                    // Apply the velocity correction
+                    vel += velocityCorrection1;  // Adjust velocity of current particle
+                    let otherVel = getVelocity(otherIndex);
+                    setVelocity(otherIndex, otherVel + velocityCorrection2);  // Adjust velocity of the other particle
+                }
+*/
             }
         }
- /*
+
         if(externalForce.z!=0.0){                                    
             if(index < 600 && pos.z < 120.0){
                 pos.z += 0.1;
@@ -266,7 +296,7 @@ export class ParticleShader {
             }
             vel.z = 10.0;
         }
-*/
+
 
         velocities[index*3 + 0] = vel.x;
         velocities[index*3 + 1] = vel.y;

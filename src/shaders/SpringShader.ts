@@ -32,52 +32,45 @@ export class SpringShader {
 
 
     @compute @workgroup_size(256)
-fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
-    let id = global_id.x;
+    fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+        let id = global_id.x;
 
-    if(id >= numSprings){return;}
+        if(id >= numSprings){return;}
 
-    var spring = springs[id];
+        var spring = springs[id];
 
-    var i1 = u32(spring.index1);
-    var i2 = u32(spring.index2);
+        var i1 = u32(spring.index1);
+        var i2 = u32(spring.index2);
 
-    var pos1 = getPosition(i1);
-    var pos2 = getPosition(i2);
+        var pos1 = getPosition(i1);
+        var pos2 = getPosition(i2);
 
-    var vel1 = getVelocity(i1);
-    var vel2 = getVelocity(i2);
+        var vel1 = getVelocity(i1);
+        var vel2 = getVelocity(i2);
 
-    var posDirection = pos2 - pos1;
-    var velDirection = vel2 - vel1;
+        var posDirection = pos2 - pos1;
+        var velDirection = vel2 - vel1;
 
-    var len = length(posDirection);
-    var forceDirection = normalize(posDirection);
-    var spforce = (len - spring.mRestLen) * spring.ks;  
-    
-    var s1 = dot(vel1,forceDirection);
-    var s2 = dot(vel2,forceDirection);
+        var len = length(posDirection);
+        var forceDirection = normalize(posDirection);
+        var spforce = (len - spring.mRestLen) * spring.ks;  
+        //spforce = clamp(spforce, -100.0, 100.0);
+        
+        var s1 = dot(vel1,forceDirection);
+        var s2 = dot(vel2,forceDirection);
 
-    var damp = dot(velDirection, forceDirection) / len * spring.kd;
-    //var damp = -spring.kd * (s1 + s2);
-    var estimatedForce = forceDirection * (spforce+damp) / len;              
+        var damp = dot(velDirection, forceDirection) / len * spring.kd;
+        //var damp = -spring.kd * (s1 + s2);
+        var estimatedForce = forceDirection * (spforce+damp) / len;  
 
-    // atomicAdd(&nodeForce[i1 * 3 + 0].value, i32(1));
-    // atomicAdd(&nodeForce[i1 * 3 + 1].value, i32(1));
-    // atomicAdd(&nodeForce[i1 * 3 + 2].value, i32(1));
+        atomicAdd(&nodeForce[i1 * 3 + 0].value, i32(estimatedForce.x*100.0));
+        atomicAdd(&nodeForce[i1 * 3 + 1].value, i32(estimatedForce.y*100.0));
+        atomicAdd(&nodeForce[i1 * 3 + 2].value, i32(estimatedForce.z*100.0));
 
-    // atomicAdd(&nodeForce[i2 * 3 + 0].value, i32(-1));
-    // atomicAdd(&nodeForce[i2 * 3 + 1].value, i32(-1));
-    // atomicAdd(&nodeForce[i2 * 3 + 2].value, i32(-1));
-
-    atomicAdd(&nodeForce[i1 * 3 + 0].value, i32(estimatedForce.x*100.0));
-    atomicAdd(&nodeForce[i1 * 3 + 1].value, i32(estimatedForce.y*100.0));
-    atomicAdd(&nodeForce[i1 * 3 + 2].value, i32(estimatedForce.z*100.0));
-
-    atomicAdd(&nodeForce[i2 * 3 + 0].value, i32(-estimatedForce.x*100.0));
-    atomicAdd(&nodeForce[i2 * 3 + 1].value, i32(-estimatedForce.y*100.0));
-    atomicAdd(&nodeForce[i2 * 3 + 2].value, i32(-estimatedForce.z*100.0));
-}
+        atomicAdd(&nodeForce[i2 * 3 + 0].value, i32(-estimatedForce.x*100.0));
+        atomicAdd(&nodeForce[i2 * 3 + 1].value, i32(-estimatedForce.y*100.0));
+        atomicAdd(&nodeForce[i2 * 3 + 2].value, i32(-estimatedForce.z*100.0));
+    }
     `;
 
     getSpringUpdateShader() {
