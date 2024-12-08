@@ -51,8 +51,8 @@ export class ClothRenderer extends Renderer {
     bendKs: number = 500.0;
     kD : number = 0.25;
     //xSize and ySize are the length of side of the cloth
-    xSize : number = 80;
-    ySize : number = 80;
+    xSize : number = 20;
+    ySize : number = 20;
 
     //UVs uvIndices is used to store each uv info. uv is used to combine all uvIndices together
     uvIndices: [number, number][] = [];
@@ -151,7 +151,7 @@ export class ClothRenderer extends Renderer {
     }
 
     async createAssets() {
-        const assets1 = await this.createTextureFromImage("../scenes/white.png", this.device);
+        const assets1 = await this.createTextureFromImage("../img/images.jpg", this.device);
         //this.texture = assets1.texture;
         this.sampler = assets1.sampler;
         this.view = assets1.view;
@@ -165,7 +165,11 @@ export class ClothRenderer extends Renderer {
     async createTextureFromImage(src: string, device: GPUDevice): Promise<{ texture: GPUTexture, sampler: GPUSampler, view: GPUTextureView }> {
         const response: Response = await fetch(src);
         const blob: Blob = await response.blob();
-        const imageData: ImageBitmap = await createImageBitmap(blob);
+        const tFile = this.guiController.textureFile;
+        const imageData: ImageBitmap = tFile != null ? await createImageBitmap(tFile) : await createImageBitmap(blob);
+        if(this.guiController.textureFile != null){
+            this.guiController.textureFile = null;
+        }
 
         const texture = await this.loadImageBitmap(device, imageData);
 
@@ -190,6 +194,7 @@ export class ClothRenderer extends Renderer {
 
         return { texture, sampler, view };
     }
+
     async loadImageBitmap(device: GPUDevice, imageData: ImageBitmap): Promise<GPUTexture> {
 
         const textureDescriptor: GPUTextureDescriptor = {
@@ -215,7 +220,8 @@ export class ClothRenderer extends Renderer {
     async MakeClothData() {
         // Load obj model
         const loader = new ObjLoader();
-        this.cloth = await loader.load('../scenes/Tshirt_high.obj', 3);
+        this.cloth = await loader.load('../scenes/cloth_test.obj', 1);
+        //this.cloth = await loader.load('../scenes/dress_large.obj', 3);
         //this.cloth = await loader.load('../scenes/skirt.obj', 3.0);
         console.log("cloth obj file load end");
         console.log(this.cloth);
@@ -325,9 +331,13 @@ export class ClothRenderer extends Renderer {
         }
         for (let i = 0; i < this.springs.length; i++) {
             var sp = this.springs[i];
-
+/*
+                        sp.targetIndex1 = this.particles[sp.index1].springs.indexOf(sp) + (this.maxSpringConnected * sp.index1);
+            sp.targetIndex2 = this.particles[sp.index2].springs.indexOf(sp) + (this.maxSpringConnected * sp.index2);
+*/
             sp.targetIndex1 += (this.maxSpringConnected * sp.index1);
             sp.targetIndex2 += (this.maxSpringConnected * sp.index2);
+
         }
         console.log("maxSpringConnected : #", this.maxSpringConnected);
         console.log("make #", this.springs.length, " spring create success");
@@ -337,7 +347,7 @@ export class ClothRenderer extends Renderer {
         const loader = new ObjLoader();
         //this.model = await loader.load('../scenes/dragon2.obj', 0.1);
         //this.model = await loader.load('../scenes/dress-v5k-f10k-v2.obj', 2.0);
-        this.model = await loader.load('../scenes/human_noArm.obj', 3);
+        this.model = await loader.load('../scenes/human.obj', 1);
         //this.model = await loader.load('../scenes/skirt.obj', 2.0);
         console.log("model obj file load end");
         console.log(this.model);
@@ -553,9 +563,9 @@ export class ClothRenderer extends Renderer {
         this.bendKs = bendKs;
         this.kD = kd;
 
-        //this.createParticles();
-        //this.createSprings();
-        await this.MakeClothData();
+        this.createParticles();
+        this.createSprings();
+        //await this.MakeClothData();
     }
 
     createSprings(){
@@ -720,14 +730,14 @@ export class ClothRenderer extends Renderer {
         
 
         // N * M particles
-        //20x20 cloth
-        const start_x = 30;
-        const start_y = 30;
+        // start position
+        const start_x = 10;
+        const start_y = 10;
 
         const dist_x = (this.xSize / this.N);
         const dist_y = (this.ySize / this.M);
-        const maxHeight = 27.0;
-        const minHeight = 13.0;
+        const maxHeight = 30.0;
+        const minHeight = 30.0;
         const centerX = (this.N - 1) / 2;
         const centerY = (this.M - 1) / 2;
 
@@ -2017,8 +2027,7 @@ export class ClothRenderer extends Renderer {
             passEncoder.setBindGroup(0, this.objRenderBindGroup); // Set the bind group with MVP matrix
             passEncoder.drawIndexed(this.objectIndicesLength);
         }
-
-        if (this.renderOptions.wireFrame) {
+        if (this.guiController.settings.wireFrame) {
             passEncoder.setPipeline(this.springPipeline);
             passEncoder.setVertexBuffer(0, this.positionBuffer); 
             passEncoder.setIndexBuffer(this.springRenderBuffer, 'uint32'); 

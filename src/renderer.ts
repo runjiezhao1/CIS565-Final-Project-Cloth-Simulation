@@ -43,12 +43,13 @@ export class Renderer{
     lastTime: number = 0;
 
     // cloth
-    cloth_SizeX: number = 5;
-    cloth_SizeY: number = 5;
+    cloth_SizeX: number = 40;
+    cloth_SizeY: number = 40;
     structural_Ks: number = 5000;
     shear_Ks: number = 2000;
     bend_Ks: number = 500;
     kd: number = 0.01;
+    textureFile !: File | null;
 
     renderOptions = {
         sensitivity: this.sensitivity,
@@ -59,7 +60,7 @@ export class Renderer{
         bendKs: this.bend_Ks,
         kd: this.kd,
 
-        wireFrame: false,
+        wireFrame: true,
         camPosX: this.camera_position[0],
         camPosY: this.camera_position[1],
         camPosZ: this.camera_position[2],
@@ -78,6 +79,7 @@ export class Renderer{
         lightIntensity: this.light_intensity,
         specularStrength: this.specular_strength,
         shininess: this.shininess,
+        textureFile : this.textureFile
     }
     
 
@@ -219,8 +221,19 @@ export class Renderer{
                     }
                 });
                 console.log("start cloth simulation!");
+            },
+            loadTexture: async ()=>{
+                console.log("load the texture");
+                this.renderOptions.textureFile = await this.guiController.loadTexture();
+                if(this.renderOptions.textureFile == null){
+                    console.log("in renderer null");
+                }else{
+                    console.log("in renderer not null");
+                }
             }
         };
+
+        
         // Initialize stats display for FPS
         this.stats.setMode(0); // 0: FPS, 1: ms/frame
         this.stats.domElement.style.position = 'absolute';
@@ -228,6 +241,11 @@ export class Renderer{
         this.stats.domElement.style.top = '0px';
         document.body.appendChild(this.stats.domElement);
         // Initialize the size of the cloth
+        // Debug mode
+        const folder_debug = this.guiController.gui.addFolder('Debug');
+        folder_debug.add(this.guiController.settings, 'wireFrame').name('WireFrame');
+        folder_debug.open();
+
         // Folder for attributes of cloth
         const folder_cloth = this.guiController.gui.addFolder('Cloth');
         folder_cloth.add(this.guiController.settings, 'clothSizeX', 1, 100).name('Cloth Size X').onChange((value: number)=>{
@@ -237,16 +255,16 @@ export class Renderer{
         folder_cloth.add(this.guiController.settings, 'clothSizeY', 1, 100).name('Cloth Size Y').onChange((value: number)=>{
              this.renderOptions.clothSizeY = value;
         });
-        folder_cloth.add(this.guiController.settings, 'structuralKs', 5000, 500000).name('Structural Ks').onChange((value: number)=>{
+        folder_cloth.add(this.guiController.settings, 'structuralKs', 100, 500000).name('Structural Ks').onChange((value: number)=>{
             this.renderOptions.structuralKs = value;
         });
-        folder_cloth.add(this.guiController.settings, 'bendKs', 500, 500000).name('bend Ks').onChange((value: number)=>{
+        folder_cloth.add(this.guiController.settings, 'bendKs', 100, 500000).name('bend Ks').onChange((value: number)=>{
             this.renderOptions.bendKs = value;
         });
-        folder_cloth.add(this.guiController.settings, 'shearKs', 2000, 500000).name('shear Ks').onChange((value: number)=>{
+        folder_cloth.add(this.guiController.settings, 'shearKs', 100, 500000).name('shear Ks').onChange((value: number)=>{
             this.renderOptions.shearKs = value;
         });
-        folder_cloth.add(this.guiController.settings, 'kd', 0.01, 1000).name('kd').onChange((value: number)=>{
+        folder_cloth.add(this.guiController.settings, 'kd', 0.01, 10).name('kd').onChange((value: number)=>{
             this.renderOptions.kd = value;
         });
         folder_cloth.open();
@@ -274,8 +292,10 @@ export class Renderer{
         });
         folder_light.open();
         // other attributes
+        this.guiController.gui.add(params, 'loadTexture').name("Load Texture Image");
         this.guiController.gui.add(params, 'loadFile').name("Load File");
         this.guiController.gui.add(params, 'startSimulation').name("Start");
+        
     }
 
 }

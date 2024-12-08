@@ -16,6 +16,8 @@ interface GUISettings
     lightPosX: any;
     lightPosY: any;
     lightPosZ: any;
+    wireFrame: false;
+    textureFile : File | null | undefined;
 }
 
 export class GUIController 
@@ -24,6 +26,7 @@ export class GUIController
     public gui: dat.GUI = new dat.GUI();
     public vertices : number[];
     public indices : number[];
+    public textureFile !: File| null;
     public updateBuffer : boolean = false;
     private camera: Camera;
     constructor() 
@@ -33,8 +36,8 @@ export class GUIController
         this.gui = new dat.GUI();
         this.settings = {
             sensitivity: 1.0,
-            clothSizeX: 5,
-            clothSizeY: 5,
+            clothSizeX: 40,
+            clothSizeY: 40,
             distance: 10,
             structuralKs: 5000,
             shearKs: 2000,
@@ -43,6 +46,8 @@ export class GUIController
             lightPosX: 171.0,
             lightPosY: 500.0,
             lightPosZ: 500.0,
+            wireFrame: false,
+            textureFile: null
         };
     }
 
@@ -54,6 +59,10 @@ export class GUIController
             startSimulation: () => {
                 //main1();
                 console.log("start cloth simulation!");
+            },
+            loadTexture: async ()=>{
+                await this.loadTexture();
+                this.settings.textureFile = this.textureFile;
             }
         };
         // Folder for attributes of cloth
@@ -70,9 +79,9 @@ export class GUIController
         });
 
         // other attributes
+        this.gui.add(params, 'loadTexture').name("Load Texture Image");
         this.gui.add(params, 'loadFile').name("Load Obj File");
         this.gui.add(params, 'startSimulation').name("Start");
-        
     }
 
     public onBackgroundColorChange(callback: (color: number[]) => void) 
@@ -97,5 +106,19 @@ export class GUIController
           this.updateBuffer = true;
         };
         input.click();
+    }
+
+    public async loadTexture(){
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.onchange = async (event) => {
+            const file = (event.target as HTMLInputElement).files?.[0];
+            if (file == undefined) return;
+            this.textureFile = await file;
+            console.log("assign texture file");
+            //const newBindGroup = await loadImageTexture(file);
+        };
+        await input.click();
+        return this.textureFile;
     }
 }

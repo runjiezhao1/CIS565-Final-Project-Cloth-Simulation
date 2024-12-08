@@ -142,6 +142,8 @@ export class ParticleShader {
         // finalColor.a = 0.8;
         // return finalColor;
 
+        let texColor: vec4<f32> = textureSample(myTexture, mySampler, TexCoord);
+
         let lightPos: vec3<f32> = lightUBO.position;
         let lightColor: vec4<f32> = lightUBO.color;
         let lightIntensity: f32 = lightUBO.intensity;
@@ -149,12 +151,12 @@ export class ParticleShader {
 
         //let ambientColor: vec4<f32> = vec4<f32>(0.513725, 0.435294, 1.0, 1.0) * 0.001;
         let ambientColor: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0) * 0.1;
-    
+        
         // // diffuse
         let norm: vec3<f32> = normalize(Normal);
         let lightDir: vec3<f32> = normalize(lightPos - FragPos);
         let diff: f32 = max(dot(norm, lightDir), 0.0);
-        let diffuse: vec4<f32> = lightColor * diff * lightIntensity * vec4<f32>(1.0, 1.0, 1.0, 1.0);
+        let diffuse: vec4<f32> = lightColor * diff * lightIntensity * texColor;
     
         // // specular
         let viewDir: vec3<f32> = normalize(cameraPos - FragPos);
@@ -195,14 +197,19 @@ export class ParticleShader {
     fn getForce(index:u32) -> vec3<f32>{
         return vec3<f32>(force[index*3] / 2.0,force[index*3+1] / 2.0,force[index*3+2] / 2.0);
     }
+    fn setPosition(index: u32, pos: vec3<f32>) {
+        positions[index * 3 + 0] = pos.x;
+        positions[index * 3 + 1] = pos.y;
+        positions[index * 3 + 2] = pos.z;
+    }
 
     @compute 
     @workgroup_size(256)
     fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let index: u32 = global_id.x;
-        var fixed = fixed[index];
+        var fixed1 = fixed[index];
         
-        if(fixed==1){
+        if(fixed1==1){
             return;
         }
         
@@ -212,21 +219,46 @@ export class ParticleShader {
         
         prevPosition[index*3 + 0] = pos.x;
         prevPosition[index*3 + 1] = pos.y;
-        prevPosition[index*3 + 2] = pos.z;
-        
-        //floor collisions
-        if(pos.y < 0.0){
-            pos.y += 0.0001;  
-            vel *= -0.0;      
-        }
+        prevPosition[index*3 + 2] = pos.z;  
         
         var gravity: vec3<f32> = vec3<f32>(0.0, -32.6, 0.0);        
-        var deltaTime: f32 = 0.001; // Assuming 60 FPS for simplicity
+        var deltaTime: f32 = 0.002; // Assuming 60 FPS for simplicity
         vel += ((f + gravity) * deltaTime);
         pos += (vel * deltaTime);
-        
+
+        //floor collisions
+        if(pos.y < 0.0){
+            pos.y = 0.0; 
+            vel.y = 0.0;      
+        }
+
+        // self-collision detection
+        let collisionRadius: f32 = 0.25;
+        for (var otherIndex: u32 = 0; otherIndex < arrayLength(&positions) / 3; otherIndex++) {
+            var fixed2 = fixed[otherIndex];
+            if (otherIndex == index || fixed2 == 1) {
+                continue;
+            }
+            let otherPos = getPosition(otherIndex);
+            let delta = pos - otherPos;
+            let distanceSquared = dot(delta, delta);
+            let radiusSquared = collisionRadius * collisionRadius;
+
+            if (distanceSquared < radiusSquared) {
+                let distance = sqrt(distanceSquared);
+                let correction = (collisionRadius - distance) * 0.5; // Split correction evenly
+                let correctionVector = normalize(delta) * correction;
+
+                // Resolve collision
+                pos += correctionVector;
+                if (fixed[otherIndex] == 0) {
+                    setPosition(otherIndex, otherPos - correctionVector);
+                }
+            }
+        }
+ /*
         if(externalForce.z!=0.0){                                    
-            if(index<600 && pos.z < 120.0){
+            if(index < 600 && pos.z < 120.0){
                 pos.z += 0.1;
                 vel.y = -32.6;
                 vel.z = 20.0;
@@ -236,7 +268,7 @@ export class ParticleShader {
             }
             vel.z = 10.0;
         }
-
+*/
 
         velocities[index*3 + 0] = vel.x;
         velocities[index*3 + 1] = vel.y;
