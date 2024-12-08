@@ -151,7 +151,7 @@ export class ClothRenderer extends Renderer {
     }
 
     async createAssets() {
-        const assets1 = await this.createTextureFromImage("../scenes/white.png", this.device);
+        const assets1 = await this.createTextureFromImage("../img/images.jpg", this.device);
         //this.texture = assets1.texture;
         this.sampler = assets1.sampler;
         this.view = assets1.view;
@@ -165,7 +165,11 @@ export class ClothRenderer extends Renderer {
     async createTextureFromImage(src: string, device: GPUDevice): Promise<{ texture: GPUTexture, sampler: GPUSampler, view: GPUTextureView }> {
         const response: Response = await fetch(src);
         const blob: Blob = await response.blob();
-        const imageData: ImageBitmap = await createImageBitmap(blob);
+        const tFile = this.guiController.textureFile;
+        const imageData: ImageBitmap = tFile != null ? await createImageBitmap(tFile) : await createImageBitmap(blob);
+        if(this.guiController.textureFile != null){
+            this.guiController.textureFile = null;
+        }
 
         const texture = await this.loadImageBitmap(device, imageData);
 
@@ -190,6 +194,7 @@ export class ClothRenderer extends Renderer {
 
         return { texture, sampler, view };
     }
+
     async loadImageBitmap(device: GPUDevice, imageData: ImageBitmap): Promise<GPUTexture> {
 
         const textureDescriptor: GPUTextureDescriptor = {
@@ -558,9 +563,9 @@ export class ClothRenderer extends Renderer {
         this.bendKs = bendKs;
         this.kD = kd;
 
-        //this.createParticles();
-        //this.createSprings();
-        await this.MakeClothData();
+        this.createParticles();
+        this.createSprings();
+        //await this.MakeClothData();
     }
 
     createSprings(){

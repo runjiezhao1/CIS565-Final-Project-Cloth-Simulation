@@ -49,6 +49,7 @@ export class Renderer{
     shear_Ks: number = 2000;
     bend_Ks: number = 500;
     kd: number = 0.01;
+    textureFile !: File | null;
 
     renderOptions = {
         sensitivity: this.sensitivity,
@@ -78,6 +79,7 @@ export class Renderer{
         lightIntensity: this.light_intensity,
         specularStrength: this.specular_strength,
         shininess: this.shininess,
+        textureFile : this.textureFile
     }
     
 
@@ -219,8 +221,19 @@ export class Renderer{
                     }
                 });
                 console.log("start cloth simulation!");
+            },
+            loadTexture: async ()=>{
+                console.log("load the texture");
+                this.renderOptions.textureFile = await this.guiController.loadTexture();
+                if(this.renderOptions.textureFile == null){
+                    console.log("in renderer null");
+                }else{
+                    console.log("in renderer not null");
+                }
             }
         };
+
+        
         // Initialize stats display for FPS
         this.stats.setMode(0); // 0: FPS, 1: ms/frame
         this.stats.domElement.style.position = 'absolute';
@@ -279,8 +292,10 @@ export class Renderer{
         });
         folder_light.open();
         // other attributes
+        this.guiController.gui.add(params, 'loadTexture').name("Load Texture Image");
         this.guiController.gui.add(params, 'loadFile').name("Load File");
         this.guiController.gui.add(params, 'startSimulation').name("Start");
+        
     }
 
 }

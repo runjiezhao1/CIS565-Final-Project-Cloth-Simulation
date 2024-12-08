@@ -142,6 +142,8 @@ export class ParticleShader {
         // finalColor.a = 0.8;
         // return finalColor;
 
+        let texColor: vec4<f32> = textureSample(myTexture, mySampler, TexCoord);
+
         let lightPos: vec3<f32> = lightUBO.position;
         let lightColor: vec4<f32> = lightUBO.color;
         let lightIntensity: f32 = lightUBO.intensity;
@@ -149,12 +151,12 @@ export class ParticleShader {
 
         //let ambientColor: vec4<f32> = vec4<f32>(0.513725, 0.435294, 1.0, 1.0) * 0.001;
         let ambientColor: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0) * 0.1;
-    
+        
         // // diffuse
         let norm: vec3<f32> = normalize(Normal);
         let lightDir: vec3<f32> = normalize(lightPos - FragPos);
         let diff: f32 = max(dot(norm, lightDir), 0.0);
-        let diffuse: vec4<f32> = lightColor * diff * lightIntensity * vec4<f32>(1.0, 1.0, 1.0, 1.0);
+        let diffuse: vec4<f32> = lightColor * diff * lightIntensity * texColor;
     
         // // specular
         let viewDir: vec3<f32> = normalize(cameraPos - FragPos);
