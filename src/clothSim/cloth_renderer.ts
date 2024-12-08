@@ -159,7 +159,7 @@ export class ClothRenderer extends Renderer {
     }
 
     async createAssets() {
-        const assets1 = await this.createTextureFromImage("../scenes/metal.jpg", this.device);
+        const assets1 = await this.createTextureFromImage("../img/images.jpg", this.device);
         //this.texture = assets1.texture;
         this.sampler = assets1.sampler;
         this.view = assets1.view;
@@ -2524,11 +2524,12 @@ export class ClothRenderer extends Renderer {
     }
 
     public async renderAnimation( device: GPUDevice) {
-        if(this.objIdx > 90)this.objIdx = 1;
+        if(this.objIdx > 90)this.objIdx = 90;
         let objLoad = new ObjLoader();
-        let objm : ObjModel = await objLoad.load("../scenes/animation2/untitled000100"+ (this.objIdx < 10 ? "0" + this.objIdx : this.objIdx) + ".obj");
+        let objm : ObjModel = await objLoad.load("../scenes/HatAnimation/hat00"+ (this.objIdx < 10 ? "0" + this.objIdx : this.objIdx) + ".obj");
         this.objIdx++;
         this.objMesh.updateBuffer(new Float32Array(objm.vertices), new Uint32Array(objm.indices), new Float32Array(objm.uvs));
+        console.log(objm.uvs);
         // FPS detector
         this.stats.begin();
         // GUI controller
