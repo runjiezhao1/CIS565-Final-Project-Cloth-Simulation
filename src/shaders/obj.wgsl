@@ -52,7 +52,7 @@ fn fs_main(@location(0) TexCoord: vec2<f32> ,@location(1) Color: vec3<f32> , @lo
     let norm: vec3<f32> = normalize(Normal);
     let lightDir: vec3<f32> = normalize(lightPos - FragPos);
     let diff: f32 = max(dot(norm, lightDir), 0.0);
-    let diffuse: vec4<f32> = lightColor * diff * lightIntensity * vec4<f32>(1,0,0,1);
+    let diffuse: vec4<f32> = lightColor * diff * lightIntensity * vec4<f32>(Color, 1);
 
     // // specular
     let viewDir: vec3<f32> = normalize(cameraPos - FragPos);
@@ -60,11 +60,14 @@ fn fs_main(@location(0) TexCoord: vec2<f32> ,@location(1) Color: vec3<f32> , @lo
     let reflectDir: vec3<f32> = reflect(-lightDir, norm);
     let spec: f32 = pow(max(dot(viewDir, reflectDir), 0.0), lightUBO.shininess);
     let spec2 = pow(max(dot(norm, halfwayDir), 0.0), 32.0);
-    let specular: vec4<f32> = lightColor * spec * vec4<f32>(0.429134, 0.429134, 0.429134, 1.0);
+    //let specular: vec4<f32> = lightColor * spec * vec4<f32>(0.429134, 0.429134, 0.429134, 1.0);
     let specular2 = spec2 * lightColor * lightIntensity;
 
-    var finalColor: vec4<f32> = ambientColor + diffuse + specular2;
-    return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
-    //return vec4<f32>(TexCoord, 1, 1);
+    var finalColor: vec4<f32> = abs(ambientColor + diffuse + specular2);
+    
+    //return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
+    //return vec4<f32>(1,1,1,1);
+    return vec4<f32>(TexCoord, 1, 1);
+    //return vec4<f32>(Color, 1);
     //return vec4<f32>(texColor.xyz, 1);
 }

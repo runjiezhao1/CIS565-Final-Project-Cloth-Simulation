@@ -160,7 +160,7 @@ export class ClothRenderer extends Renderer {
     }
 
     async createAssets() {
-        const assets1 = await this.createTextureFromImage("../img/tshirt_basecolor.png", this.device);
+        const assets1 = await this.createTextureFromImage("../img/images.jpg", this.device);
         //this.texture = assets1.texture;
         this.sampler = assets1.sampler;
         this.view = assets1.view;
@@ -176,33 +176,39 @@ export class ClothRenderer extends Renderer {
         const blob: Blob = await response.blob();
         const tFile = this.guiController.textureFile;
         const imageData: ImageBitmap = tFile != null ? await createImageBitmap(tFile) : await createImageBitmap(blob);
-        // if(this.guiController.textureFile != null){
-        //     this.guiController.textureFile = null;
-        // }
-
-        // const texture = device.createTexture({
-        //     size: [imageData.width, imageData.height, 1],
-        //     format: 'rgba8unorm',
-        //     usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-        // });
 
          const texture = await this.loadImageBitmap(device, imageData);
 
-        // const texture = device.createTexture({
-        //     format: 'rgba8unorm',
-        //     mipLevelCount: 1,
-        //     size: [imageData.width, imageData.height],
-        //     usage: GPUTextureUsage.TEXTURE_BINDING |
-        //            GPUTextureUsage.COPY_DST |
-        //            GPUTextureUsage.RENDER_ATTACHMENT,
-        //   });
+        const view = texture.createView({
+            format: "rgba8unorm",
+            dimension: "2d",
+            aspect: "all",
+            baseMipLevel: 0,
+            mipLevelCount: 1,
+            baseArrayLayer: 0,
+            arrayLayerCount: 1,
+            usage: GPUTextureUsage.TEXTURE_BINDING |
+                GPUTextureUsage.COPY_DST |
+                GPUTextureUsage.RENDER_ATTACHMENT,
+        });
 
-        // const view = texture.createView(
-        //     {
-        //         baseMipLevel: 0,
-        //         mipLevelCount: 1,
-        //     }
-        // );
+        const sampler = device.createSampler({
+            addressModeU: "repeat",
+            addressModeV: "repeat",
+            magFilter: "linear",
+            minFilter: "nearest",
+            mipmapFilter: "nearest",
+            maxAnisotropy: 1,
+        });
+
+        return { texture, sampler, view };
+    }
+
+    async createTextureFromImageFromData(src: File, device: GPUDevice): Promise<{ texture: GPUTexture, sampler: GPUSampler, view: GPUTextureView }> {
+        const imageData: ImageBitmap =  await createImageBitmap(src)
+
+         const texture = await this.loadImageBitmap(device, imageData);
+
         const view = texture.createView({
             format: "rgba8unorm",
             dimension: "2d",
@@ -2381,109 +2387,128 @@ export class ClothRenderer extends Renderer {
         const clothSize = this.getUserInputClothSize();
         await this.init();
         await this.initializeClothSimulation(clothSize[0], clothSize[1]);
-        //await this.initializeAnimation(this.device);
+        await this.initializeAnimation(this.device);
         this.beginRender();
     }
 
     public async initializeAnimation(device: GPUDevice){
-        this.camPosBuffer = this.device.createBuffer({
-            size: 4 * Float32Array.BYTES_PER_ELEMENT, // vec3<f32> + padding
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
+        this.createTrianglePipeline();
+        // this.camPosBuffer = this.device.createBuffer({
+        //     size: 4 * Float32Array.BYTES_PER_ELEMENT, // vec3<f32> + padding
+        //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        // });
 
-        this.device.queue.writeBuffer(
-            this.camPosBuffer,
-            0,
-            new Float32Array([...this.camera.position, 1.0]) // vec3 + padding
-        );
+        // this.device.queue.writeBuffer(
+        //     this.camPosBuffer,
+        //     0,
+        //     new Float32Array([...this.camera.position, 1.0]) // vec3 + padding
+        // );
 
-        this.mvpUniformBuffer = this.device.createBuffer({
-            size: 64 * 3, // The total size needed for the matrices
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST // The buffer is used as a uniform and can be copied to
-        });
+        // // this.mvpUniformBuffer = this.device.createBuffer({
+        // //     size: 64 * 3, // The total size needed for the matrices
+        // //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST // The buffer is used as a uniform and can be copied to
+        // // });
 
-        this.lightDataBuffer = this.device.createBuffer({
-            size: 48, // vec3 position (12 bytes) + padding (4 bytes) + vec4 color (16 bytes) + intensity (4 bytes)
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
-        let lightData = [this.light_position[0], this.light_position[1], this.light_position[2], 0.0, this.light_color[0], this.light_color[1], this.light_color[2], 1.0, this.light_intensity, this.specular_strength, this.shininess, 0.0];
-        this.device.queue.writeBuffer(this.lightDataBuffer, 0, new Float32Array(lightData));
+        // this.lightDataBuffer = this.device.createBuffer({
+        //     size: 48, // vec3 position (12 bytes) + padding (4 bytes) + vec4 color (16 bytes) + intensity (4 bytes)
+        //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        // });
+        // let lightData = [this.light_position[0], this.light_position[1], this.light_position[2], 0.0, this.light_color[0], this.light_color[1], this.light_color[2], 1.0, this.light_intensity, this.specular_strength, this.shininess, 0.0];
+        // this.device.queue.writeBuffer(this.lightDataBuffer, 0, new Float32Array(lightData));
 
-        this.AnimationbindGroupLayout = device.createBindGroupLayout({
-            entries: [
-                {
-                    binding: 0,
-                    visibility: GPUShaderStage.VERTEX,
-                    buffer: { type: "uniform" },
-                },
-                {
-                    binding: 1,
-                    visibility: GPUShaderStage.FRAGMENT,
-                    texture: {}
-                },
-                {
-                    binding: 2,
-                    visibility: GPUShaderStage.FRAGMENT,
-                    sampler: {}
-                },
-                {
-                    binding: 3,
-                    visibility: GPUShaderStage.FRAGMENT,
-                    buffer: {
-                        type: 'uniform',
-                    }
-                },
-                {
-                    binding: 4,
-                    visibility: GPUShaderStage.FRAGMENT,
-                    buffer: {
-                        type: 'uniform',
-                    }
-                },
-            ],
-        });
+        // this.AnimationbindGroupLayout = device.createBindGroupLayout({
+        //     entries: [
+        //         {
+        //             binding: 0,
+        //             visibility: GPUShaderStage.VERTEX,
+        //             buffer: {}
+        //         },
+        //         {
+        //             binding: 1,
+        //             visibility: GPUShaderStage.FRAGMENT,
+        //             texture: {}
+        //         },
+        //         {
+        //             binding: 2,
+        //             visibility: GPUShaderStage.FRAGMENT,
+        //             sampler: {}
+        //         },
+        //         {
+        //             binding: 3,
+        //             visibility: GPUShaderStage.FRAGMENT,
+        //             buffer: {
+        //                 type: 'uniform',
+        //             }
+        //         },
+        //         {
+        //             binding: 4,
+        //             visibility: GPUShaderStage.FRAGMENT,
+        //             buffer: {
+        //                 type: 'uniform',
+        //             }
+        //         },
+        //         {
+        //             binding: 5,
+        //             visibility: GPUShaderStage.FRAGMENT,
+        //             buffer: {
+        //                 type: 'uniform',
+        //             }
+        //         },
+        //     ],
+        // });
+
+        // const alphaData = new Float32Array([1.0]);
+        // this.alphaValueBuffer = this.device.createBuffer({
+        //     size: alphaData.byteLength,
+        //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        //     mappedAtCreation: true,
+        // });
+        // new Float32Array(this.alphaValueBuffer.getMappedRange()).set(alphaData);
+        // this.alphaValueBuffer.unmap();
     
-        this.AnimationbindGroup = device.createBindGroup({
-            layout: this.AnimationbindGroupLayout,
-            entries: [
-                {
-                    binding: 0, 
-                    resource: 
-                    { 
-                        buffer: this.mvpUniformBuffer 
-                    } 
-                },
-                {
-                    binding: 1,
-                    resource: this.view
-                },
-                {
-                    binding: 2,
-                    resource: this.sampler
-                },
-                {
-                    binding: 3,
-                    resource: {
-                        buffer: this.lightDataBuffer
-                    }
-                },
-                {
-                    binding: 4,
-                    resource: {
-                        buffer: this.camPosBuffer
-                    }
-                }
-            ]
-        });
+        // this.AnimationbindGroup = device.createBindGroup({
+        //     layout: this.AnimationbindGroupLayout,
+        //     entries: [
+        //         {
+        //             binding: 0, 
+        //             resource: 
+        //             { 
+        //                 buffer: this.mvpUniformBuffer 
+        //             } 
+        //         },
+        //         {
+        //             binding: 1,
+        //             resource: this.view
+        //         },
+        //         {
+        //             binding: 2,
+        //             resource: this.sampler
+        //         },
+        //         {
+        //             binding: 3,
+        //             resource: {
+        //                 buffer: this.lightDataBuffer
+        //             }
+        //         },
+        //         {
+        //             binding: 4,
+        //             resource: {
+        //                 buffer: this.camPosBuffer
+        //             }
+        //         }
+        //     ]
+        // });
 
-        this.AnimationPipelineLayout = device.createPipelineLayout({
-            bindGroupLayouts: [this.AnimationbindGroupLayout]
-        });
+        // this.AnimationPipelineLayout = device.createPipelineLayout({
+        //     bindGroupLayouts: [this.AnimationbindGroupLayout]
+        // });
 
         this.objMesh = new ObjMesh(device, new Float32Array([]), new Uint32Array([]), new Float32Array([]), new Float32Array([]));
     }
 
     public async renderAnimation( device: GPUDevice) {
+        const currentTime = performance.now();
+        this.setCamera(this.camera);
         if(this.objIdx > 90)this.objIdx = 90;
         let fileName = "../scenes/TshirtAnimation/tshirt00"+ (this.objIdx < 10 ? "0" + this.objIdx : this.objIdx) + ".obj";
         let objLoad = new ObjLoader();
@@ -2492,189 +2517,61 @@ export class ClothRenderer extends Renderer {
         this.objMesh.updateBuffer(new Float32Array(objm.vertices), new Uint32Array(objm.indices), new Float32Array(objm.uvs), new Float32Array(objm.normals));
         // FPS detector
         this.stats.begin();
-        // GUI controller
-        console.log(objm.normals);
-        this.setCamera(this.camera);
+        // // GUI controller
 
         if(this.guiController.textureFile != null){
-            console.log("change texture");
-            const assets1 = await this.createTextureFromImage("../img/tshirt_basecolor.png", device);
+            const assets1 = await this.createTextureFromImageFromData(this.guiController.textureFile, device);
             this.view = await assets1.view;
             this.sampler = await assets1.sampler;
-            this.AnimationbindGroup = device.createBindGroup({
-                layout: this.AnimationbindGroupLayout,
-                entries: [
-                    {
-                        binding: 0, 
-                        resource: 
-                        { 
-                            buffer: this.mvpUniformBuffer 
-                        } 
-                    },
-                    {
-                        binding: 1,
-                        resource: this.view
-                    },
-                    {
-                        binding: 2,
-                        resource: this.sampler
-                    },
-                    {
-                        binding: 3,
-                        resource: {
-                            buffer: this.lightDataBuffer
-                        }
-                    },
-                    {
-                        binding: 4,
-                        resource: {
-                            buffer: this.camPosBuffer
-                        }
-                    }
-                ]
-            });
+            await this.createTrianglePipeline();
+            this.guiController.textureFile = null;
         }
 
 
         //command encoder: records draw commands for submission
+        await this.makeRenderpassDescriptor();
         const commandEncoder : GPUCommandEncoder = device.createCommandEncoder();
-        //texture view: image view to the color buffer in this case
-        const textureView : GPUTextureView = this.context.getCurrentTexture().createView();
+        if (this.renderOptions.wind) {
+            const newExternalForce = new Float32Array([0.0, 0.0, 20.0]);
+            this.device.queue.writeBuffer(
+                this.externalForceBuffer,
+                0, // Buffer 
+                newExternalForce.buffer, // 
+                newExternalForce.byteOffset,
+                newExternalForce.byteLength
+            );
+        }
+        const renderpass = commandEncoder.beginRenderPass(this.renderPassDescriptor);
+        this.device.queue.writeBuffer(
+            this.camPosBuffer,
+            0,
+            new Float32Array([...this.camera.position, 1.0]) // vec3 + padding
+        );
 
-        //renderpass: holds draw commands, allocated from command encoder
-        const renderpass = commandEncoder.beginRenderPass({
-            colorAttachments: [{
-                view: textureView,
-                clearValue: {
-                    r: 1,
-                    g: 0,
-                    b: 1,
-                    a: 1.0
-                },
-                loadOp: "clear",
-                storeOp: "store"
-            }]
-        });
-
-        //setup pipeline
-        const pipeline = device.createRenderPipeline({
-            vertex : {
-                module : device.createShaderModule({
-                    code : objSrc
-                }),
-                entryPoint : "vs_main",
-                buffers: [
-                    {
-                        arrayStride: 12, // Each vertex has 6 floats (x, y, z, r, g, b)
-                        attributes: [
-                            { 
-                                shaderLocation: 0, 
-                                offset: 0, 
-                                format: "float32x3" 
-                            }, // Position attribute
-                        ],
-                    },
-                    {
-                        arrayStride: 8,
-                        attributes: [
-                            {
-                                shaderLocation: 1,
-                                format: "float32x2",
-                                offset: 0
-                            }
-                        ]
-                    },
-                    {
-                        arrayStride: 12,
-                        attributes: [
-                            {
-                                shaderLocation: 2,
-                                format: "float32x2",
-                                offset: 0
-                            }
-                        ]
-                    }
-                ],
-            },
-    
-            fragment : {
-                module : device.createShaderModule({
-                    code : objSrc
-                }),
-                entryPoint : "fs_main",
-                targets : [{
-                    format : this.format
-                }]
-            },
-    
-            primitive : {
-                topology : "triangle-list"
-            },
-    
-            layout: this.AnimationPipelineLayout
-        });
-
-        const objPipeline = device.createRenderPipeline({
-            vertex : {
-                module : device.createShaderModule({
-                    code : this.objectShader.getObjTextureShader()
-                }),
-                entryPoint : "vs_main",
-                buffers: [
-                    {
-                        arrayStride: 3 * 4, // Each vertex has 6 floats (x, y, z, r, g, b)
-                        attributes: [
-                            { shaderLocation: 0, offset: 0, format: "float32x3" }, // Position attribute
-                        ],
-                    },
-                    {
-                        arrayStride: 8,
-                        attributes: [
-                            {
-                                shaderLocation: 1,
-                                format: "float32x2",
-                                offset: 0
-                            }
-                        ]
-                    },
-                ],
-            },
-    
-            fragment : {
-                module : device.createShaderModule({
-                    code : this.objectShader.getObjTextureShader()
-                }),
-                entryPoint : "fs_main",
-                targets : [{
-                    format : this.format
-                }]
-            },
-    
-            primitive : {
-                topology : "triangle-list"
-            },
-    
-            layout: this.AnimationPipelineLayout
-        });
-
+        let lightData = [this.light_position[0], this.light_position[1], this.light_position[2], 0.0, this.light_color[0], this.light_color[1], this.light_color[2], 1.0, this.light_intensity, this.specular_strength, this.shininess, 0.0];
+        this.device.queue.writeBuffer(this.lightDataBuffer, 0, new Float32Array(lightData));
         if (this.renderOptions.renderObject) {
-            renderpass.setPipeline(objPipeline);
+            renderpass.setPipeline(this.objRenderPipeline);
             renderpass.setVertexBuffer(0, this.ObjectPosBuffer); 
             renderpass.setVertexBuffer(1, this.objectUVBuffer); 
+            renderpass.setVertexBuffer(2, this.objectNormalBuffer); 
             renderpass.setIndexBuffer(this.objectIndexBuffer, 'uint32'); 
-            renderpass.setBindGroup(0, this.AnimationbindGroup); // Set the bind group with MVP matrix
+            renderpass.setBindGroup(0, this.objRenderBindGroup); // Set the bind group with MVP matrix
             renderpass.drawIndexed(this.objectIndicesLength);
         }
         
-        renderpass.setPipeline(pipeline);
-        renderpass.setVertexBuffer(0, this.objMesh.vertexBuffer);
-        renderpass.setVertexBuffer(1, this.objMesh.uvBuffer);
+        renderpass.setPipeline(this.trianglePipeline);
+        renderpass.setVertexBuffer(0, this.objMesh.vertexBuffer); 
+        renderpass.setVertexBuffer(1, this.objMesh.uvBuffer); 
         renderpass.setVertexBuffer(2, this.objMesh.normalBuffer);
-        renderpass.setIndexBuffer(this.objMesh.indexBuffer, "uint32");
-        renderpass.setBindGroup(0, this.AnimationbindGroup)
-        renderpass.drawIndexed(this.objMesh.indexCount); // Draw using indices
+        renderpass.setIndexBuffer(this.objMesh.indexBuffer, 'uint32'); 
+        renderpass.setBindGroup(0, this.triangleBindGroup); // Set the bind group with MVP matrix
+        renderpass.drawIndexed(this.objMesh.indexCount);
         renderpass.end();
         device.queue.submit([commandEncoder.finish()]);
+        await this.device.queue.onSubmittedWorkDone();
+        this.lastTime = currentTime;
+        this.localFrameCount++;
         this.stats.end();
     }
 }

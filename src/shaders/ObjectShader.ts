@@ -83,8 +83,8 @@ export class ObjectShader {
 
         var finalColor: vec4<f32> = ambientColor + diffuse + specular + vec4<f32>(0.000000, 0.000000, 0.000000, 1.0);        
 
-        return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
-        
+        //return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
+        return vec4<f32>(TexCoord,1,1);
         //return vec4<f32>(diffuse.x, diffuse.y, diffuse.z, 1.0);
     }
     `;
@@ -131,7 +131,7 @@ export class ObjectShader {
         @fragment
         fn fs_main(@location(0) TexCoord: vec2<f32>, @location(1) Color: vec4<f32>) -> @location(0) vec4<f32> {
             let texColor: vec4<f32> = textureSample(myTexture, mySampler, TexCoord);
-            return Color;
+            return vec4<f32>(TexCoord, 1, 1);
         }
     `
 
