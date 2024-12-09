@@ -2393,115 +2393,6 @@ export class ClothRenderer extends Renderer {
 
     public async initializeAnimation(device: GPUDevice){
         this.createTrianglePipeline();
-        // this.camPosBuffer = this.device.createBuffer({
-        //     size: 4 * Float32Array.BYTES_PER_ELEMENT, // vec3<f32> + padding
-        //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        // });
-
-        // this.device.queue.writeBuffer(
-        //     this.camPosBuffer,
-        //     0,
-        //     new Float32Array([...this.camera.position, 1.0]) // vec3 + padding
-        // );
-
-        // // this.mvpUniformBuffer = this.device.createBuffer({
-        // //     size: 64 * 3, // The total size needed for the matrices
-        // //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST // The buffer is used as a uniform and can be copied to
-        // // });
-
-        // this.lightDataBuffer = this.device.createBuffer({
-        //     size: 48, // vec3 position (12 bytes) + padding (4 bytes) + vec4 color (16 bytes) + intensity (4 bytes)
-        //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        // });
-        // let lightData = [this.light_position[0], this.light_position[1], this.light_position[2], 0.0, this.light_color[0], this.light_color[1], this.light_color[2], 1.0, this.light_intensity, this.specular_strength, this.shininess, 0.0];
-        // this.device.queue.writeBuffer(this.lightDataBuffer, 0, new Float32Array(lightData));
-
-        // this.AnimationbindGroupLayout = device.createBindGroupLayout({
-        //     entries: [
-        //         {
-        //             binding: 0,
-        //             visibility: GPUShaderStage.VERTEX,
-        //             buffer: {}
-        //         },
-        //         {
-        //             binding: 1,
-        //             visibility: GPUShaderStage.FRAGMENT,
-        //             texture: {}
-        //         },
-        //         {
-        //             binding: 2,
-        //             visibility: GPUShaderStage.FRAGMENT,
-        //             sampler: {}
-        //         },
-        //         {
-        //             binding: 3,
-        //             visibility: GPUShaderStage.FRAGMENT,
-        //             buffer: {
-        //                 type: 'uniform',
-        //             }
-        //         },
-        //         {
-        //             binding: 4,
-        //             visibility: GPUShaderStage.FRAGMENT,
-        //             buffer: {
-        //                 type: 'uniform',
-        //             }
-        //         },
-        //         {
-        //             binding: 5,
-        //             visibility: GPUShaderStage.FRAGMENT,
-        //             buffer: {
-        //                 type: 'uniform',
-        //             }
-        //         },
-        //     ],
-        // });
-
-        // const alphaData = new Float32Array([1.0]);
-        // this.alphaValueBuffer = this.device.createBuffer({
-        //     size: alphaData.byteLength,
-        //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        //     mappedAtCreation: true,
-        // });
-        // new Float32Array(this.alphaValueBuffer.getMappedRange()).set(alphaData);
-        // this.alphaValueBuffer.unmap();
-    
-        // this.AnimationbindGroup = device.createBindGroup({
-        //     layout: this.AnimationbindGroupLayout,
-        //     entries: [
-        //         {
-        //             binding: 0, 
-        //             resource: 
-        //             { 
-        //                 buffer: this.mvpUniformBuffer 
-        //             } 
-        //         },
-        //         {
-        //             binding: 1,
-        //             resource: this.view
-        //         },
-        //         {
-        //             binding: 2,
-        //             resource: this.sampler
-        //         },
-        //         {
-        //             binding: 3,
-        //             resource: {
-        //                 buffer: this.lightDataBuffer
-        //             }
-        //         },
-        //         {
-        //             binding: 4,
-        //             resource: {
-        //                 buffer: this.camPosBuffer
-        //             }
-        //         }
-        //     ]
-        // });
-
-        // this.AnimationPipelineLayout = device.createPipelineLayout({
-        //     bindGroupLayouts: [this.AnimationbindGroupLayout]
-        // });
 
         this.objMesh = new ObjMesh(device, new Float32Array([]), new Uint32Array([]), new Float32Array([]), new Float32Array([]));
     }
@@ -2509,8 +2400,10 @@ export class ClothRenderer extends Renderer {
     public async renderAnimation( device: GPUDevice) {
         const currentTime = performance.now();
         this.setCamera(this.camera);
-        if(this.objIdx > 90)this.objIdx = 90;
-        let fileName = "../scenes/TshirtAnimation/tshirt00"+ (this.objIdx < 10 ? "0" + this.objIdx : this.objIdx) + ".obj";
+        if(this.objIdx > 299)this.objIdx = 299;
+        let temp = this.objIdx < 100 ? "0" + this.objIdx : this.objIdx;
+        temp = this.objIdx < 10 ? "0" + temp : temp;
+        let fileName = "../scenes/TshirtAnimation/tshirt0"+ temp + ".obj";
         let objLoad = new ObjLoader();
         let objm : ObjModel = await objLoad.load(fileName, 1);
         this.objIdx++;

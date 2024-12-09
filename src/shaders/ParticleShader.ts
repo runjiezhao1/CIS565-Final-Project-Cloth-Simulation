@@ -137,11 +137,11 @@ export class ParticleShader {
         let specular: vec4<f32> = lightColor * spec * vec4<f32>(0.429134, 0.429134, 0.429134, 1.0);
         let specular2 = spec2 * lightColor * lightIntensity;
 
-        var finalColor: vec4<f32> = ambientColor + diffuse + specular2;
+        var finalColor: vec4<f32> = ambientColor + diffuse; //+ specular2;
 
         //return vec4<f32>(1.0,1.0, 1.0, 1.0);
-        //return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
-        return vec4<f32>(texColor.x, texColor.y, texColor.z, 1);
+        return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
+        //return vec4<f32>(texColor.x, texColor.y, texColor.z, 1);
         //return vec4<f32>(diffuse.x, diffuse.y, diffuse.z, 1.0);
     }
 
