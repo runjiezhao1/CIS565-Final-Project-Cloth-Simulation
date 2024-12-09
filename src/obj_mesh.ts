@@ -7,7 +7,7 @@ export class ObjMesh {
     vertexBuffer : GPUBuffer;
     indexBuffer : GPUBuffer;
     uvBuffer : GPUBuffer;
-    indexCount: number;
+    indexCount: number = 0;
 
     constructor(device: GPUDevice, vertices: Float32Array, indices: Uint32Array, uvs : Float32Array) {
         this.device = device;
@@ -32,7 +32,7 @@ export class ObjMesh {
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
             mappedAtCreation: true,
         });
-        new Uint32Array(this.uvBuffer.getMappedRange()).set(uvs);
+        new Float32Array(this.uvBuffer.getMappedRange()).set(uvs);
         this.uvBuffer.unmap();
     }
 
@@ -59,7 +59,7 @@ export class ObjMesh {
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
             mappedAtCreation: true,
         });
-        new Uint32Array(this.uvBuffer.getMappedRange()).set(uvs);
+        new Float32Array(this.uvBuffer.getMappedRange()).set(uvs);
         this.uvBuffer.unmap();
     }
 }

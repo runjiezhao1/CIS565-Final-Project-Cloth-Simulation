@@ -160,7 +160,7 @@ export class ClothRenderer extends Renderer {
     }
 
     async createAssets() {
-        const assets1 = await this.createTextureFromImage("../img/hat_basecolor.png", this.device);
+        const assets1 = await this.createTextureFromImage("../img/tshirt_basecolor.png", this.device);
         //this.texture = assets1.texture;
         this.sampler = assets1.sampler;
         this.view = assets1.view;
@@ -180,8 +180,29 @@ export class ClothRenderer extends Renderer {
         //     this.guiController.textureFile = null;
         // }
 
-        const texture = await this.loadImageBitmap(device, imageData);
+        // const texture = device.createTexture({
+        //     size: [imageData.width, imageData.height, 1],
+        //     format: 'rgba8unorm',
+        //     usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+        // });
 
+         const texture = await this.loadImageBitmap(device, imageData);
+
+        // const texture = device.createTexture({
+        //     format: 'rgba8unorm',
+        //     mipLevelCount: 1,
+        //     size: [imageData.width, imageData.height],
+        //     usage: GPUTextureUsage.TEXTURE_BINDING |
+        //            GPUTextureUsage.COPY_DST |
+        //            GPUTextureUsage.RENDER_ATTACHMENT,
+        //   });
+
+        // const view = texture.createView(
+        //     {
+        //         baseMipLevel: 0,
+        //         mipLevelCount: 1,
+        //     }
+        // );
         const view = texture.createView({
             format: "rgba8unorm",
             dimension: "2d",
@@ -189,7 +210,10 @@ export class ClothRenderer extends Renderer {
             baseMipLevel: 0,
             mipLevelCount: 1,
             baseArrayLayer: 0,
-            arrayLayerCount: 1
+            arrayLayerCount: 1,
+            usage: GPUTextureUsage.TEXTURE_BINDING |
+                GPUTextureUsage.COPY_DST |
+                GPUTextureUsage.RENDER_ATTACHMENT,
         });
 
         const sampler = device.createSampler({
@@ -198,7 +222,7 @@ export class ClothRenderer extends Renderer {
             magFilter: "linear",
             minFilter: "nearest",
             mipmapFilter: "nearest",
-            maxAnisotropy: 1
+            maxAnisotropy: 1,
         });
 
         return { texture, sampler, view };
@@ -226,127 +250,18 @@ export class ClothRenderer extends Renderer {
         return texture;
     }
 
-    async MakeSimpleCloth(){
-        this.uvIndices = [];
-        this.particles = [];
-        this.triangles = [];
-        this.numParticles = 0;
-        this.maxTriangleConnected = 0;
-        this.springs = [];
-        this.maxSpringConnected = 0;
-        // Load obj model
-        const loader = new ObjLoader();
-        
-        if(this.loadClothAnim){
-            this.cloth = await loader.load("../scenes/animation2/untitled000100"+ (this.objIdx < 10 ? "0"+this.objIdx : this.objIdx) + ".obj",1);
-            // this.objIdx++;
-            // if(this.objIdx > 80){
-            //     this.objIdx = 80;
-            // }
-        }
-        // extract vertex, indices, normal, uv data...
-        var vertArray = new Float32Array(this.cloth.vertices);
-        var indArray = new Uint32Array(this.cloth.indices);
-        var normalArray = new Float32Array(this.cloth.normals);
-        var uvArray = new Float32Array(this.cloth.uvs);
-        var pureFaces = new Uint32Array(this.cloth.pureFaces);
-        const numTriangleData = new Uint32Array([this.cloth.indices.length / 3]);
-
-        // obj cloth to particle
-        this.uv = uvArray;
-        this.particles = [];
-        this.triangles = [];
-        this.numParticles = 0;
-        this.maxTriangleConnected = 0;
-        this.springs = [];
-        this.maxSpringConnected = 0;
-        
-        // each vertex is treated as a particle
-        for (let i = 0; i < this.cloth.pureVertices.length; i ++) {
-            const pos = vec3.fromValues(this.cloth.pureVertices[i][0], this.cloth.pureVertices[i][1], this.cloth.pureVertices[i][2]);
-            const vel = vec3.fromValues(0, 0, 0);
-            const node = new Node(pos, vel);
-            this.particles.push(node);
-        }
-        // initialize triangles and normals
-        this.normals = new Array(this.particles.length);
-        this.normals.fill(vec3.create());
-        let indicesArray: number[] = [];
-        //直接用obj里面的vertex normal
-        for (let i = 0; i < pureFaces.length; i += 3) {
-            const [i1, i2, i3] = [pureFaces[i], pureFaces[i + 1], pureFaces[i + 2]];
-            // Create triangles for structural connections
-            const triangle = new Triangle(i1, i2, i3);
-            this.triangles.push(triangle);
-            // Associate triangles with particles
-            this.particles[i1].triangles.push(triangle);
-            this.particles[i2].triangles.push(triangle);
-            this.particles[i3].triangles.push(triangle);
-            indicesArray.push(i1, i2, i3);
-            // Calculate normal for each triangle and accumulate it for each vertex
-            const v0 = this.particles[i1].position;
-            const v1 = this.particles[i2].position;
-            const v2 = this.particles[i3].position;
-            const normal = calculateNormal(v0, v1, v2);
-
-            vec3.add(this.normals[i1], this.normals[i1], normal);
-            vec3.add(this.normals[i2], this.normals[i2], normal);
-            vec3.add(this.normals[i3], this.normals[i3], normal);
-        }
-        // Normalize the normals for all particles
-        this.normals.forEach(normal => {
-            vec3.normalize(normal, normal);
-        });
-        // [Debug]: Create Springs and store uv, indices, normals for rendering
-        // create springs between adjacent particles based on triangles
-        // this.triangles.forEach(triangle => {
-        //     const [p1, p2, p3] = [this.particles[triangle.v1], this.particles[triangle.v2], this.particles[triangle.v3]];
-            
-        //     // Create springs between each edge in the triangle
-        //     const sp1 = new Spring(
-        //         p1, p2, this.structuralKs, this.kD, "structural", triangle.v1, triangle.v2
-        //     );
-        //     sp1.targetIndex1 = this.particles[sp1.index1].springs.length;
-        //     sp1.targetIndex2 = this.particles[sp1.index2].springs.length;
-        //     this.springs.push(sp1);
-        //     this.particles[sp1.index1].springs.push(sp1);
-        //     this.particles[sp1.index2].springs.push(sp1);
-
-        //     const sp2 = new Spring(
-        //         p2, p3, this.structuralKs, this.kD, "structural", triangle.v2, triangle.v3
-        //     );
-        //     sp2.targetIndex1 = this.particles[sp2.index1].springs.length;
-        //     sp2.targetIndex2 = this.particles[sp2.index2].springs.length;
-        //     this.springs.push(sp2);
-        //     this.particles[sp2.index1].springs.push(sp2);
-        //     this.particles[sp2.index2].springs.push(sp2);
-
-        //     const sp3 = new Spring(
-        //         p3, p1, this.structuralKs, this.kD, "structural", triangle.v3, triangle.v1
-        //     );
-        //     sp3.targetIndex1 = this.particles[sp3.index1].springs.length;
-        //     sp3.targetIndex2 = this.particles[sp3.index2].springs.length;
-        //     this.springs.push(sp3);
-        //     this.particles[sp3.index1].springs.push(sp3);
-        //     this.particles[sp3.index2].springs.push(sp3);
-        // });
-        // store indicis, and normal for rendering
-        this.triangleIndices = new Uint32Array(indicesArray);
-        this.numParticles = this.particles.length;
-    }
-
     async MakeClothData() {
-        this.uvIndices = [];
-        this.particles = [];
-        this.triangles = [];
-        this.numParticles = 0;
-        this.maxTriangleConnected = 0;
-        this.springs = [];
-        this.maxSpringConnected = 0;
+        // this.uvIndices = [];
+        // this.particles = [];
+        // this.triangles = [];
+        // this.numParticles = 0;
+        // this.maxTriangleConnected = 0;
+        // this.springs = [];
+        // this.maxSpringConnected = 0;
         // Load obj model
         const loader = new ObjLoader();
         //this.cloth = await loader.load('../scenes/cloth_test.obj', 1);
-        this.cloth = await loader.load('../scenes/animation2/untitled00010001.obj', 1);
+        this.cloth = await loader.load('../scenes/cloth_test.obj', 1);
         // if(this.loadClothAnim){
         //     this.cloth = await loader.load("../scenes/animation/untitled00"+ (this.objIdx < 10 ? "0"+this.objIdx : this.objIdx) + ".obj",10);
         //     this.objIdx++;
@@ -696,9 +611,9 @@ export class ClothRenderer extends Renderer {
         this.bendKs = bendKs;
         this.kD = kd;
 
-        //this.createParticles();
-        //this.createSprings();
-        await this.MakeClothData();
+        this.createParticles();
+        this.createSprings();
+        //await this.MakeClothData();
     }
 
     createSprings(){
@@ -961,10 +876,6 @@ export class ClothRenderer extends Renderer {
             this.maxTriangleConnected = Math.max(this.maxTriangleConnected, nConnectedTriangle);
         }
         console.log("maxTriangleConnetced : #", this.maxTriangleConnected);
-    }
-
-    createSimpleBuffers(){
-
     }
 
     createClothBuffers(){
@@ -2105,7 +2016,7 @@ export class ClothRenderer extends Renderer {
         const currentTime = performance.now();
 
         this.setCamera(this.camera);
-        this.makeRenderpassDescriptor();
+        await this.makeRenderpassDescriptor();
 
         const commandEncoder = this.device.createCommandEncoder();
 
@@ -2199,8 +2110,8 @@ export class ClothRenderer extends Renderer {
     makeRenderpassDescriptor() {
         this.renderPassDescriptor = {
             colorAttachments: [{
-                view: this.context.getCurrentTexture().createView(),
-                //resolveTarget: this.context.getCurrentTexture().createView(),
+                view: this.resolveTexture.createView(),
+                resolveTarget: this.context.getCurrentTexture().createView(),
                 clearValue: { r: 0.25, g: 0.25, b: 0.25, a: 1.0 }, // Background color
                 loadOp: 'clear',
                 storeOp: 'store',
@@ -2241,6 +2152,9 @@ export class ClothRenderer extends Renderer {
     }
 
     InitNodeForce(commandEncoder: GPUCommandEncoder) {
+        if(this.computeNodeForceInitPipeline == null){
+            console.log("node force not init");
+        }
         const computePass = commandEncoder.beginComputePass();
         computePass.setPipeline(this.computeNodeForceInitPipeline);
         computePass.setBindGroup(0, this.computeNodeForceBindGroup);
@@ -2433,16 +2347,16 @@ export class ClothRenderer extends Renderer {
         //structuralKs: number = 5000.0, shearKs: number = 2000.0, bendKs: number = 500.0, kd: number = 0.25
         //await this.createClothInfo(clothSizeX, clothSizeY,  555000.0, 545000.0, 550000.0, 1000);
         await this.createClothInfo(clothSizeX, clothSizeY, structuralKs, shearKs, bendKs, kd);
-        this.createClothBuffers();
-        this.createRenderPipeline();
-        this.createSpringPipeline();
-        this.createTrianglePipeline();
-        this.createParticlePipeline();
-        this.createUpdateNormalPipeline();
-        this.createSpringForceComputePipeline();
-        this.createNodeForceSummationPipeline();
-        this.createIntersectionPipeline();
-        this.createTriTriIntersectionPipeline();
+        await this.createClothBuffers();
+        await this.createRenderPipeline();
+        await this.createSpringPipeline();
+        await this.createTrianglePipeline();
+        await this.createParticlePipeline();
+        await this.createUpdateNormalPipeline();
+        await this.createSpringForceComputePipeline();
+        await this.createNodeForceSummationPipeline();
+        await this.createIntersectionPipeline();
+        await this.createTriTriIntersectionPipeline();
     }
 
     public async beginRender() {
@@ -2466,8 +2380,8 @@ export class ClothRenderer extends Renderer {
     public async startClothSimulation() {
         const clothSize = this.getUserInputClothSize();
         await this.init();
-        this.initializeClothSimulation(clothSize[0], clothSize[1]);
-        await this.initializeAnimation(this.device);
+        await this.initializeClothSimulation(clothSize[0], clothSize[1]);
+        //await this.initializeAnimation(this.device);
         this.beginRender();
     }
 
@@ -2526,7 +2440,7 @@ export class ClothRenderer extends Renderer {
 
     public async renderAnimation( device: GPUDevice) {
         if(this.objIdx > 90)this.objIdx = 90;
-        let fileName = "../scenes/HatAnimation/hat00"+ (this.objIdx < 10 ? "0" + this.objIdx : this.objIdx) + ".obj";
+        let fileName = "../scenes/TshirtAnimation/tshirt00"+ (this.objIdx < 10 ? "0" + this.objIdx : this.objIdx) + ".obj";
         let objLoad = new ObjLoader();
         let objm : ObjModel = await objLoad.load(fileName);
         this.objIdx++;
@@ -2535,12 +2449,13 @@ export class ClothRenderer extends Renderer {
         this.stats.begin();
         // GUI controller
         this.setCamera(this.camera);
+        console.log(objm.uvs);
 
         if(this.guiController.textureFile != null){
             console.log("change texture");
-            const assets1 = await this.createTextureFromImage("../img/hat_basecolor.png", device);
-            this.view = assets1.view;
-            this.sampler = assets1.sampler;
+            const assets1 = await this.createTextureFromImage("../img/tshirt_basecolor.png", device);
+            this.view = await assets1.view;
+            this.sampler = await assets1.sampler;
             this.AnimationbindGroup = device.createBindGroup({
                 layout: this.AnimationbindGroupLayout,
                 entries: [
@@ -2628,8 +2543,51 @@ export class ClothRenderer extends Renderer {
             layout: this.AnimationPipelineLayout
         });
 
+        const objPipeline = device.createRenderPipeline({
+            vertex : {
+                module : device.createShaderModule({
+                    code : this.objectShader.getObjTextureShader()
+                }),
+                entryPoint : "vs_main",
+                buffers: [
+                    {
+                        arrayStride: 3 * 4, // Each vertex has 6 floats (x, y, z, r, g, b)
+                        attributes: [
+                            { shaderLocation: 0, offset: 0, format: "float32x3" }, // Position attribute
+                        ],
+                    },
+                    {
+                        arrayStride: 8,
+                        attributes: [
+                            {
+                                shaderLocation: 1,
+                                format: "float32x2",
+                                offset: 0
+                            }
+                        ]
+                    },
+                ],
+            },
+    
+            fragment : {
+                module : device.createShaderModule({
+                    code : this.objectShader.getObjTextureShader()
+                }),
+                entryPoint : "fs_main",
+                targets : [{
+                    format : this.format
+                }]
+            },
+    
+            primitive : {
+                topology : "triangle-list"
+            },
+    
+            layout: this.AnimationPipelineLayout
+        });
+
         if (this.renderOptions.renderObject) {
-            renderpass.setPipeline(pipeline);
+            renderpass.setPipeline(objPipeline);
             renderpass.setVertexBuffer(0, this.ObjectPosBuffer); 
             renderpass.setVertexBuffer(1, this.objectUVBuffer); 
             renderpass.setIndexBuffer(this.objectIndexBuffer, 'uint32'); 

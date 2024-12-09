@@ -26,5 +26,6 @@ fn vs_main(@location(0) vertexPosition: vec3<f32>, @location(1) vertexTexCoord: 
 @fragment
 fn fs_main(@location(0) Color: vec4<f32>, @location(1) TexCoord: vec2<f32>) -> @location(0) vec4<f32> {
     let texColor: vec4<f32> = textureSample(myTexture, mySampler, TexCoord);
-    return texColor;
+    //return vec4<f32>(TexCoord, 1, 1);
+    return vec4<f32>(texColor.xyz, 1);
 }
