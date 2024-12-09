@@ -86,7 +86,7 @@ export class ObjectShader {
         //return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
         //return vec4<f32>(TexCoord,1,1);
         //return vec4<f32>(diffuse.x, diffuse.y, diffuse.z, 1.0);
-        return vec4<f32>(0.5,0.5,0.5,1);
+        return vec4<f32>(finalColor.xyz,1);
     }
     `;
 

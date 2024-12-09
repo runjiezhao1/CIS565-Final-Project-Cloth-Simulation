@@ -22,9 +22,9 @@ export class Camera {
         fovY: number = 45 * (Math.PI / 180),
         near: number = 0.01,
         far: number = 100000.0,
-        radius: number = 150, // default distance from target
+        radius: number = 50, // default distance from target
     ) {
-        this.position = vec3.fromValues(0, 20, 100); // Camera starting position
+        this.position = vec3.fromValues(0, 50, 150); // Camera starting position
         this.target = vec3.fromValues(0, 0, 0);   // Look at the origin
         this.up = vec3.fromValues(0, 1, 0);       // Up direction
 

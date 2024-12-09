@@ -46,7 +46,7 @@ fn fs_main(@location(0) TexCoord: vec2<f32> ,@location(1) Color: vec3<f32> , @lo
     let lightColor: vec4<f32> = lightUBO.color;
     let lightIntensity: f32 = lightUBO.intensity;
 
-    let ambientColor: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0) * 0.1;
+    let ambientColor: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0) * 2.0;
 
     // // diffuse
     let norm: vec3<f32> = normalize(Normal);
@@ -63,11 +63,12 @@ fn fs_main(@location(0) TexCoord: vec2<f32> ,@location(1) Color: vec3<f32> , @lo
     //let specular: vec4<f32> = lightColor * spec * vec4<f32>(0.429134, 0.429134, 0.429134, 1.0);
     let specular2 = spec2 * lightColor * lightIntensity;
 
-    var finalColor: vec4<f32> = abs(ambientColor + diffuse + specular2);
+    var finalColor: vec4<f32> = (ambient + diffuse) * texColor;
     
     //return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
     //return vec4<f32>(1,1,1,1);
-    return vec4<f32>(TexCoord, 1, 1);
+    return vec4<f32>(finalColor.xyz, 1.0);
+    //return vec4<f32>(TexCoord, 1, 1);
     //return vec4<f32>(Color, 1);
     //return vec4<f32>(texColor.xyz, 1);
 }

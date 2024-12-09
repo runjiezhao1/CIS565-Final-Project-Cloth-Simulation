@@ -2365,12 +2365,12 @@ export class ClothRenderer extends Renderer {
         await this.createTriTriIntersectionPipeline();
     }
 
-    public async beginRender() {
+    public async beginRender(flag: number) {
         this.objIdx = 0;
         const renderLoop = async () => {
             this.statsOn();
             if(this.loadClothAnim){
-                this.renderAnimation(this.device);
+                this.renderAnimation(this.device, flag);
             }else{
                 this.render();
             }
@@ -2397,17 +2397,47 @@ export class ClothRenderer extends Renderer {
         this.objMesh = new ObjMesh(device, new Float32Array([]), new Uint32Array([]), new Float32Array([]), new Float32Array([]));
     }
 
-    public async renderAnimation( device: GPUDevice) {
+    public async renderAnimation( device: GPUDevice, flag: number) {
         const currentTime = performance.now();
         this.setCamera(this.camera);
-        if(this.objIdx > 299)this.objIdx = 299;
-        let temp = this.objIdx < 100 ? "0" + this.objIdx : this.objIdx;
-        temp = this.objIdx < 10 ? "0" + temp : temp;
-        let fileName = "../scenes/TshirtAnimation/tshirt0"+ temp + ".obj";
-        let objLoad = new ObjLoader();
-        let objm : ObjModel = await objLoad.load(fileName, 1);
-        this.objIdx++;
-        this.objMesh.updateBuffer(new Float32Array(objm.vertices), new Uint32Array(objm.indices), new Float32Array(objm.uvs), new Float32Array(objm.normals));
+        switch (flag) {
+            case 1:
+                // tshirt 300
+                if(this.objIdx > 299)this.objIdx = 299;
+                let temp1 = this.objIdx < 100 ? "0" + this.objIdx : this.objIdx;
+                temp1 = this.objIdx < 10 ? "0" + temp1 : temp1;
+                let fileName1 = "../scenes/Tshirt/tshirt0"+ temp1 + ".obj";
+                let objLoad1 = new ObjLoader();
+                let objm1 : ObjModel = await objLoad1.load(fileName1, 1);
+                this.objIdx++;
+                this.objMesh.updateBuffer(new Float32Array(objm1.vertices), new Uint32Array(objm1.indices), new Float32Array(objm1.uvs), new Float32Array(objm1.normals));
+                break;
+            case 2:
+                // dress 200
+                if(this.objIdx > 199)this.objIdx = 199;
+                let temp2 = this.objIdx < 100 ? "0" + this.objIdx : this.objIdx;
+                temp2 = this.objIdx < 10 ? "0" + temp2 : temp2;
+                let fileName2 = "../scenes/Dress/dress0"+ temp2 + ".obj";
+                let objLoad2 = new ObjLoader();
+                let objm2 : ObjModel = await objLoad2.load(fileName2, 1);
+                this.objIdx++;
+                this.objMesh.updateBuffer(new Float32Array(objm2.vertices), new Uint32Array(objm2.indices), new Float32Array(objm2.uvs), new Float32Array(objm2.normals));
+                break;
+            case 3:
+                // hat 200
+                if(this.objIdx > 199)this.objIdx = 199;
+                let temp = this.objIdx < 100 ? "0" + this.objIdx : this.objIdx;
+                temp = this.objIdx < 10 ? "0" + temp : temp;
+                let fileName = "../scenes/Hat/hat0"+ temp + ".obj";
+                let objLoad = new ObjLoader();
+                let objm : ObjModel = await objLoad.load(fileName, 1);
+                this.objIdx++;
+                this.objMesh.updateBuffer(new Float32Array(objm.vertices), new Uint32Array(objm.indices), new Float32Array(objm.uvs), new Float32Array(objm.normals));
+                break;
+            default:
+                break;
+        }
+        
         // FPS detector
         this.stats.begin();
         // // GUI controller

@@ -2,6 +2,7 @@ import * as dat from 'dat.gui';
 import { parseOBJ } from '../utils';
 import { ObjMesh } from '../obj_mesh';
 import { Camera } from '../stage/camera'; 
+import { log } from 'console';
 //import { main1 } from '../main';
 interface GUISettings 
 {
@@ -28,6 +29,7 @@ export class GUIController
     public indices : number[];
     public textureFile !: File| null;
     public updateBuffer : boolean = false;
+    public fileType : number;
     private camera: Camera;
     constructor() 
     {
@@ -38,7 +40,7 @@ export class GUIController
             sensitivity: 1.0,
             clothSizeX: 40,
             clothSizeY: 40,
-            distance: 10,
+            distance: 50,
             structuralKs: 5000,
             shearKs: 2000,
             bendKs: 500,
@@ -106,6 +108,29 @@ export class GUIController
           this.updateBuffer = true;
         };
         input.click();
+    }
+    public loadFile2() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.obj';
+        input.onchange = async (event) => {
+            const file = (event.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+
+            const text = await file.text();
+            const fileName = text;
+            if (fileName.includes("Tshirt")) {
+                this.fileType = 1; // Tshirt
+            } else if (fileName.includes("dress")) {
+                this.fileType = 2; // Dress
+            } else if (fileName.includes("hat")) {
+                this.fileType = 3; // Hat
+            } else {
+                this.fileType = 0;
+            }
+        };
+        input.click();
+        console.log(this.fileType);
     }
 
     public async loadTexture(){

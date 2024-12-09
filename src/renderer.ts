@@ -203,9 +203,12 @@ export class Renderer{
 
     initializeGUI() {
         this.guiController = new GUIController();
+        let flag = 0;
         // Add button options here:
         var params = {
-            loadFile: () => this.guiController.loadFile(),
+            loadFile: () => {
+                this.guiController.loadFile2();
+            },
             startSimulation: async () => {
                 this.isRunning = true;
                 this.init().then(async ()=>{
@@ -230,8 +233,9 @@ export class Renderer{
                                 this.renderOptions.kd
                             );
                         }
-                        
-                        this.beginRender();
+                        flag = this.guiController.fileType;
+                        console.log(flag);
+                        this.beginRender(flag);
                     }
                 });
                 console.log("start cloth simulation!");
