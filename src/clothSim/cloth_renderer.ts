@@ -18,6 +18,7 @@ export class ClothRenderer extends Renderer {
     objMesh !: ObjMesh;
     AnimationbindGroup !: GPUBindGroup;
     AnimationPipelineLayout !: GPUPipelineLayout;
+    AnimationbindGroupLayout !: GPUBindGroupLayout;
 
     objLoader : ObjLoader = new ObjLoader();
     objModel : ObjModel = new ObjModel();
@@ -175,9 +176,9 @@ export class ClothRenderer extends Renderer {
         const blob: Blob = await response.blob();
         const tFile = this.guiController.textureFile;
         const imageData: ImageBitmap = tFile != null ? await createImageBitmap(tFile) : await createImageBitmap(blob);
-        if(this.guiController.textureFile != null){
-            this.guiController.textureFile = null;
-        }
+        // if(this.guiController.textureFile != null){
+        //     this.guiController.textureFile = null;
+        // }
 
         const texture = await this.loadImageBitmap(device, imageData);
 
@@ -2198,8 +2199,8 @@ export class ClothRenderer extends Renderer {
     makeRenderpassDescriptor() {
         this.renderPassDescriptor = {
             colorAttachments: [{
-                view: this.resolveTexture.createView(),
-                resolveTarget: this.context.getCurrentTexture().createView(),
+                view: this.context.getCurrentTexture().createView(),
+                //resolveTarget: this.context.getCurrentTexture().createView(),
                 clearValue: { r: 0.25, g: 0.25, b: 0.25, a: 1.0 }, // Background color
                 loadOp: 'clear',
                 storeOp: 'store',
@@ -2475,7 +2476,7 @@ export class ClothRenderer extends Renderer {
             size: 64 * 3, // The total size needed for the matrices
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST // The buffer is used as a uniform and can be copied to
         });
-        const bindGroupLayout = device.createBindGroupLayout({
+        this.AnimationbindGroupLayout = device.createBindGroupLayout({
             entries: [
                 {
                     binding: 0,
@@ -2496,7 +2497,7 @@ export class ClothRenderer extends Renderer {
         });
     
         this.AnimationbindGroup = device.createBindGroup({
-            layout: bindGroupLayout,
+            layout: this.AnimationbindGroupLayout,
             entries: [
                 {
                     binding: 0, 
@@ -2517,7 +2518,7 @@ export class ClothRenderer extends Renderer {
         });
 
         this.AnimationPipelineLayout = device.createPipelineLayout({
-            bindGroupLayouts: [bindGroupLayout]
+            bindGroupLayouts: [this.AnimationbindGroupLayout]
         });
 
         this.objMesh = new ObjMesh(device, new Float32Array([]), new Uint32Array([]), new Float32Array([]));
@@ -2526,18 +2527,43 @@ export class ClothRenderer extends Renderer {
     public async renderAnimation( device: GPUDevice) {
         if(this.objIdx > 90)this.objIdx = 90;
         let fileName = "../scenes/HatAnimation/hat00"+ (this.objIdx < 10 ? "0" + this.objIdx : this.objIdx) + ".obj";
-        // if(existsSync(fileName)){
-        //     console.log("Does  existed");
-        // }
         let objLoad = new ObjLoader();
         let objm : ObjModel = await objLoad.load(fileName);
         this.objIdx++;
         this.objMesh.updateBuffer(new Float32Array(objm.vertices), new Uint32Array(objm.indices), new Float32Array(objm.uvs));
-        console.log(objm.uvs);
         // FPS detector
         this.stats.begin();
         // GUI controller
         this.setCamera(this.camera);
+
+        if(this.guiController.textureFile != null){
+            console.log("change texture");
+            const assets1 = await this.createTextureFromImage("../img/hat_basecolor.png", device);
+            this.view = assets1.view;
+            this.sampler = assets1.sampler;
+            this.AnimationbindGroup = device.createBindGroup({
+                layout: this.AnimationbindGroupLayout,
+                entries: [
+                    {
+                        binding: 0, 
+                        resource: 
+                        { 
+                            buffer: this.mvpUniformBuffer 
+                        } 
+                    },
+                    {
+                        binding: 1,
+                        resource: this.view
+                    },
+                    {
+                        binding: 2,
+                        resource: this.sampler
+                    },
+                ]
+            });
+        }
+
+
         //command encoder: records draw commands for submission
         const commandEncoder : GPUCommandEncoder = device.createCommandEncoder();
         //texture view: image view to the color buffer in this case
@@ -2601,6 +2627,15 @@ export class ClothRenderer extends Renderer {
     
             layout: this.AnimationPipelineLayout
         });
+
+        if (this.renderOptions.renderObject) {
+            renderpass.setPipeline(pipeline);
+            renderpass.setVertexBuffer(0, this.ObjectPosBuffer); 
+            renderpass.setVertexBuffer(1, this.objectUVBuffer); 
+            renderpass.setIndexBuffer(this.objectIndexBuffer, 'uint32'); 
+            renderpass.setBindGroup(0, this.AnimationbindGroup); // Set the bind group with MVP matrix
+            renderpass.drawIndexed(this.objectIndicesLength);
+        }
         
         renderpass.setPipeline(pipeline);
         renderpass.setVertexBuffer(0, this.objMesh.vertexBuffer);
