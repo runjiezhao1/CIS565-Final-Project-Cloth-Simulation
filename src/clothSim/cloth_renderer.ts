@@ -914,7 +914,7 @@ export class ClothRenderer extends Renderer {
         this.springRenderBuffer = makeUInt32IndexArrayBuffer(this.device, this.springIndices);
 
         this.uvBuffer = makeFloat32ArrayBuffer(this.device, this.uv);
-
+        console.log(this.uv);
         this.triangleRenderBuffer = this.device.createBuffer({
             size: this.triangleIndices.byteLength,
             usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST | GPUBufferUsage.STORAGE,
@@ -2386,10 +2386,29 @@ export class ClothRenderer extends Renderer {
     }
 
     public async initializeAnimation(device: GPUDevice){
+        this.camPosBuffer = this.device.createBuffer({
+            size: 4 * Float32Array.BYTES_PER_ELEMENT, // vec3<f32> + padding
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+
+        this.device.queue.writeBuffer(
+            this.camPosBuffer,
+            0,
+            new Float32Array([...this.camera.position, 1.0]) // vec3 + padding
+        );
+
         this.mvpUniformBuffer = this.device.createBuffer({
             size: 64 * 3, // The total size needed for the matrices
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST // The buffer is used as a uniform and can be copied to
         });
+
+        this.lightDataBuffer = this.device.createBuffer({
+            size: 48, // vec3 position (12 bytes) + padding (4 bytes) + vec4 color (16 bytes) + intensity (4 bytes)
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        let lightData = [this.light_position[0], this.light_position[1], this.light_position[2], 0.0, this.light_color[0], this.light_color[1], this.light_color[2], 1.0, this.light_intensity, this.specular_strength, this.shininess, 0.0];
+        this.device.queue.writeBuffer(this.lightDataBuffer, 0, new Float32Array(lightData));
+
         this.AnimationbindGroupLayout = device.createBindGroupLayout({
             entries: [
                 {
@@ -2406,6 +2425,20 @@ export class ClothRenderer extends Renderer {
                     binding: 2,
                     visibility: GPUShaderStage.FRAGMENT,
                     sampler: {}
+                },
+                {
+                    binding: 3,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    buffer: {
+                        type: 'uniform',
+                    }
+                },
+                {
+                    binding: 4,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    buffer: {
+                        type: 'uniform',
+                    }
                 },
             ],
         });
@@ -2428,6 +2461,18 @@ export class ClothRenderer extends Renderer {
                     binding: 2,
                     resource: this.sampler
                 },
+                {
+                    binding: 3,
+                    resource: {
+                        buffer: this.lightDataBuffer
+                    }
+                },
+                {
+                    binding: 4,
+                    resource: {
+                        buffer: this.camPosBuffer
+                    }
+                }
             ]
         });
 
@@ -2435,21 +2480,21 @@ export class ClothRenderer extends Renderer {
             bindGroupLayouts: [this.AnimationbindGroupLayout]
         });
 
-        this.objMesh = new ObjMesh(device, new Float32Array([]), new Uint32Array([]), new Float32Array([]));
+        this.objMesh = new ObjMesh(device, new Float32Array([]), new Uint32Array([]), new Float32Array([]), new Float32Array([]));
     }
 
     public async renderAnimation( device: GPUDevice) {
         if(this.objIdx > 90)this.objIdx = 90;
         let fileName = "../scenes/TshirtAnimation/tshirt00"+ (this.objIdx < 10 ? "0" + this.objIdx : this.objIdx) + ".obj";
         let objLoad = new ObjLoader();
-        let objm : ObjModel = await objLoad.load(fileName);
+        let objm : ObjModel = await objLoad.load(fileName, 1);
         this.objIdx++;
-        this.objMesh.updateBuffer(new Float32Array(objm.vertices), new Uint32Array(objm.indices), new Float32Array(objm.uvs));
+        this.objMesh.updateBuffer(new Float32Array(objm.vertices), new Uint32Array(objm.indices), new Float32Array(objm.uvs), new Float32Array(objm.normals));
         // FPS detector
         this.stats.begin();
         // GUI controller
+        console.log(objm.normals);
         this.setCamera(this.camera);
-        console.log(objm.uvs);
 
         if(this.guiController.textureFile != null){
             console.log("change texture");
@@ -2474,6 +2519,18 @@ export class ClothRenderer extends Renderer {
                         binding: 2,
                         resource: this.sampler
                     },
+                    {
+                        binding: 3,
+                        resource: {
+                            buffer: this.lightDataBuffer
+                        }
+                    },
+                    {
+                        binding: 4,
+                        resource: {
+                            buffer: this.camPosBuffer
+                        }
+                    }
                 ]
             });
         }
@@ -2490,7 +2547,7 @@ export class ClothRenderer extends Renderer {
                 view: textureView,
                 clearValue: {
                     r: 1,
-                    g: 1,
+                    g: 0,
                     b: 1,
                     a: 1.0
                 },
@@ -2508,9 +2565,13 @@ export class ClothRenderer extends Renderer {
                 entryPoint : "vs_main",
                 buffers: [
                     {
-                        arrayStride: 3 * 4, // Each vertex has 6 floats (x, y, z, r, g, b)
+                        arrayStride: 12, // Each vertex has 6 floats (x, y, z, r, g, b)
                         attributes: [
-                            { shaderLocation: 0, offset: 0, format: "float32x3" }, // Position attribute
+                            { 
+                                shaderLocation: 0, 
+                                offset: 0, 
+                                format: "float32x3" 
+                            }, // Position attribute
                         ],
                     },
                     {
@@ -2523,6 +2584,16 @@ export class ClothRenderer extends Renderer {
                             }
                         ]
                     },
+                    {
+                        arrayStride: 12,
+                        attributes: [
+                            {
+                                shaderLocation: 2,
+                                format: "float32x2",
+                                offset: 0
+                            }
+                        ]
+                    }
                 ],
             },
     
@@ -2598,6 +2669,7 @@ export class ClothRenderer extends Renderer {
         renderpass.setPipeline(pipeline);
         renderpass.setVertexBuffer(0, this.objMesh.vertexBuffer);
         renderpass.setVertexBuffer(1, this.objMesh.uvBuffer);
+        renderpass.setVertexBuffer(2, this.objMesh.normalBuffer);
         renderpass.setIndexBuffer(this.objMesh.indexBuffer, "uint32");
         renderpass.setBindGroup(0, this.AnimationbindGroup)
         renderpass.drawIndexed(this.objMesh.indexCount); // Draw using indices

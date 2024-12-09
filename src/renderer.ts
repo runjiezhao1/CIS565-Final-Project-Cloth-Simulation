@@ -205,14 +205,14 @@ export class Renderer{
         // Add button options here:
         var params = {
             loadFile: () => this.guiController.loadFile(),
-            startSimulation: () => {
+            startSimulation: async () => {
                 this.isRunning = true;
-                this.init().then(()=>{
+                this.init().then(async ()=>{
                     if(this instanceof ClothRenderer){
                         if(this.loadClothAnim){
                             this.initializeAnimation(this.device);
                         }else{
-                            this.initializeClothSimulation(
+                            await this.initializeClothSimulation(
                                 Math.round(this.renderOptions.clothSizeX),
                                 Math.round(this.renderOptions.clothSizeY),
                                 this.renderOptions.structuralKs,

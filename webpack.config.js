@@ -22,6 +22,7 @@ module.exports = {
     ]
   },
   resolve: {
+    fs: require.resolve('rollup-pligin-node-builtins'),
     extensions: ['.ts', '.js' ],
   },
   devtool: 'source-map',

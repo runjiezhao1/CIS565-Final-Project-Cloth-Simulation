@@ -102,12 +102,21 @@ export class ObjectShader {
         @group(0) @binding(0) var<uniform> transformUBO: TransformData;
         @group(0) @binding(1) var myTexture: texture_2d<f32>;
         @group(0) @binding(2) var mySampler: sampler;
+        struct LightData {
+            position: vec3<f32>,
+            color: vec4<f32>,
+            intensity: f32,
+            specularStrength: f32,
+            shininess: f32,
+        };
+        @binding(3) @group(0) var<uniform> lightUBO: LightData;
 
 
         struct Fragment {
             @builtin(position) Position : vec4<f32>,
-            @location(0) Color : vec4<f32>,
-            @location(1) TexCoord : vec2<f32>,
+            @location(0) TexCoord : vec2<f32>,
+            @location(1) Color : vec4<f32>,
+            
         };
 
         @vertex
@@ -120,7 +129,7 @@ export class ObjectShader {
         }
 
         @fragment
-        fn fs_main(@location(0) Color: vec4<f32>, @location(1) TexCoord: vec2<f32>) -> @location(0) vec4<f32> {
+        fn fs_main(@location(0) TexCoord: vec2<f32>, @location(1) Color: vec4<f32>) -> @location(0) vec4<f32> {
             let texColor: vec4<f32> = textureSample(myTexture, mySampler, TexCoord);
             return Color;
         }
