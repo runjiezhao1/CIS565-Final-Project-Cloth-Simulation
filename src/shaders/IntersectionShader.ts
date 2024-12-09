@@ -215,9 +215,9 @@ export class IntersectionShader {
             velocities[x*3 + 1] = vel.y;
             velocities[x*3 + 2] = vel.z;
 
-            positionsCloth[x*3 + 0] = pos.x;
-            positionsCloth[x*3 + 1] = pos.y;
-            positionsCloth[x*3 + 2] = pos.z;
+            //positionsCloth[x*3 + 0] = pos.x;
+            //positionsCloth[x*3 + 1] = pos.y;
+            //positionsCloth[x*3 + 2] = pos.z;
         }   
     
         atomicStore(&tempCountBuffer[x].value, i32(0));

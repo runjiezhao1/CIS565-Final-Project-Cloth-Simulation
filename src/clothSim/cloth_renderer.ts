@@ -8,8 +8,16 @@ import { ObjectShader } from "../shaders/ObjectShader";
 import { NormalShader } from "../shaders/NormalShader";
 import { SpringShader } from "../shaders/SpringShader";
 import { IntersectionShader } from "../shaders/IntersectionShader";
+import { ObjMesh } from "../obj_mesh";
 
 export class ClothRenderer extends Renderer {
+
+    //For animation
+    loadClothAnim : boolean = true;
+    objIdx : number = 1;
+    objMesh !: ObjMesh;
+    AnimationbindGroup !: GPUBindGroup;
+    AnimationPipelineLayout !: GPUPipelineLayout;
 
     objLoader : ObjLoader = new ObjLoader();
     objModel : ObjModel = new ObjModel();
@@ -151,7 +159,7 @@ export class ClothRenderer extends Renderer {
     }
 
     async createAssets() {
-        const assets1 = await this.createTextureFromImage("../img/images.jpg", this.device);
+        const assets1 = await this.createTextureFromImage("../img/hat_basecolor.png", this.device);
         //this.texture = assets1.texture;
         this.sampler = assets1.sampler;
         this.view = assets1.view;
@@ -217,10 +225,134 @@ export class ClothRenderer extends Renderer {
         return texture;
     }
 
-    async MakeClothData() {
+    async MakeSimpleCloth(){
+        this.uvIndices = [];
+        this.particles = [];
+        this.triangles = [];
+        this.numParticles = 0;
+        this.maxTriangleConnected = 0;
+        this.springs = [];
+        this.maxSpringConnected = 0;
         // Load obj model
         const loader = new ObjLoader();
-        this.cloth = await loader.load('../scenes/cloth_test.obj', 1);
+        
+        if(this.loadClothAnim){
+            this.cloth = await loader.load("../scenes/animation2/untitled000100"+ (this.objIdx < 10 ? "0"+this.objIdx : this.objIdx) + ".obj",1);
+            // this.objIdx++;
+            // if(this.objIdx > 80){
+            //     this.objIdx = 80;
+            // }
+        }
+        // extract vertex, indices, normal, uv data...
+        var vertArray = new Float32Array(this.cloth.vertices);
+        var indArray = new Uint32Array(this.cloth.indices);
+        var normalArray = new Float32Array(this.cloth.normals);
+        var uvArray = new Float32Array(this.cloth.uvs);
+        var pureFaces = new Uint32Array(this.cloth.pureFaces);
+        const numTriangleData = new Uint32Array([this.cloth.indices.length / 3]);
+
+        // obj cloth to particle
+        this.uv = uvArray;
+        this.particles = [];
+        this.triangles = [];
+        this.numParticles = 0;
+        this.maxTriangleConnected = 0;
+        this.springs = [];
+        this.maxSpringConnected = 0;
+        
+        // each vertex is treated as a particle
+        for (let i = 0; i < this.cloth.pureVertices.length; i ++) {
+            const pos = vec3.fromValues(this.cloth.pureVertices[i][0], this.cloth.pureVertices[i][1], this.cloth.pureVertices[i][2]);
+            const vel = vec3.fromValues(0, 0, 0);
+            const node = new Node(pos, vel);
+            this.particles.push(node);
+        }
+        // initialize triangles and normals
+        this.normals = new Array(this.particles.length);
+        this.normals.fill(vec3.create());
+        let indicesArray: number[] = [];
+        //直接用obj里面的vertex normal
+        for (let i = 0; i < pureFaces.length; i += 3) {
+            const [i1, i2, i3] = [pureFaces[i], pureFaces[i + 1], pureFaces[i + 2]];
+            // Create triangles for structural connections
+            const triangle = new Triangle(i1, i2, i3);
+            this.triangles.push(triangle);
+            // Associate triangles with particles
+            this.particles[i1].triangles.push(triangle);
+            this.particles[i2].triangles.push(triangle);
+            this.particles[i3].triangles.push(triangle);
+            indicesArray.push(i1, i2, i3);
+            // Calculate normal for each triangle and accumulate it for each vertex
+            const v0 = this.particles[i1].position;
+            const v1 = this.particles[i2].position;
+            const v2 = this.particles[i3].position;
+            const normal = calculateNormal(v0, v1, v2);
+
+            vec3.add(this.normals[i1], this.normals[i1], normal);
+            vec3.add(this.normals[i2], this.normals[i2], normal);
+            vec3.add(this.normals[i3], this.normals[i3], normal);
+        }
+        // Normalize the normals for all particles
+        this.normals.forEach(normal => {
+            vec3.normalize(normal, normal);
+        });
+        // [Debug]: Create Springs and store uv, indices, normals for rendering
+        // create springs between adjacent particles based on triangles
+        // this.triangles.forEach(triangle => {
+        //     const [p1, p2, p3] = [this.particles[triangle.v1], this.particles[triangle.v2], this.particles[triangle.v3]];
+            
+        //     // Create springs between each edge in the triangle
+        //     const sp1 = new Spring(
+        //         p1, p2, this.structuralKs, this.kD, "structural", triangle.v1, triangle.v2
+        //     );
+        //     sp1.targetIndex1 = this.particles[sp1.index1].springs.length;
+        //     sp1.targetIndex2 = this.particles[sp1.index2].springs.length;
+        //     this.springs.push(sp1);
+        //     this.particles[sp1.index1].springs.push(sp1);
+        //     this.particles[sp1.index2].springs.push(sp1);
+
+        //     const sp2 = new Spring(
+        //         p2, p3, this.structuralKs, this.kD, "structural", triangle.v2, triangle.v3
+        //     );
+        //     sp2.targetIndex1 = this.particles[sp2.index1].springs.length;
+        //     sp2.targetIndex2 = this.particles[sp2.index2].springs.length;
+        //     this.springs.push(sp2);
+        //     this.particles[sp2.index1].springs.push(sp2);
+        //     this.particles[sp2.index2].springs.push(sp2);
+
+        //     const sp3 = new Spring(
+        //         p3, p1, this.structuralKs, this.kD, "structural", triangle.v3, triangle.v1
+        //     );
+        //     sp3.targetIndex1 = this.particles[sp3.index1].springs.length;
+        //     sp3.targetIndex2 = this.particles[sp3.index2].springs.length;
+        //     this.springs.push(sp3);
+        //     this.particles[sp3.index1].springs.push(sp3);
+        //     this.particles[sp3.index2].springs.push(sp3);
+        // });
+        // store indicis, and normal for rendering
+        this.triangleIndices = new Uint32Array(indicesArray);
+        this.numParticles = this.particles.length;
+    }
+
+    async MakeClothData() {
+        this.uvIndices = [];
+        this.particles = [];
+        this.triangles = [];
+        this.numParticles = 0;
+        this.maxTriangleConnected = 0;
+        this.springs = [];
+        this.maxSpringConnected = 0;
+        // Load obj model
+        const loader = new ObjLoader();
+        //this.cloth = await loader.load('../scenes/cloth_test.obj', 1);
+        this.cloth = await loader.load('../scenes/animation2/untitled00010001.obj', 1);
+        // if(this.loadClothAnim){
+        //     this.cloth = await loader.load("../scenes/animation/untitled00"+ (this.objIdx < 10 ? "0"+this.objIdx : this.objIdx) + ".obj",10);
+        //     this.objIdx++;
+        //     if(this.objIdx > 80){
+        //         this.objIdx = 80;
+        //     }
+        // }
         //this.cloth = await loader.load('../scenes/dress_large.obj', 3);
         //this.cloth = await loader.load('../scenes/skirt.obj', 3.0);
         console.log("cloth obj file load end");
@@ -563,9 +695,9 @@ export class ClothRenderer extends Renderer {
         this.bendKs = bendKs;
         this.kD = kd;
 
-        this.createParticles();
-        this.createSprings();
-        //await this.MakeClothData();
+        //this.createParticles();
+        //this.createSprings();
+        await this.MakeClothData();
     }
 
     createSprings(){
@@ -828,6 +960,10 @@ export class ClothRenderer extends Renderer {
             this.maxTriangleConnected = Math.max(this.maxTriangleConnected, nConnectedTriangle);
         }
         console.log("maxTriangleConnetced : #", this.maxTriangleConnected);
+    }
+
+    createSimpleBuffers(){
+
     }
 
     createClothBuffers(){
@@ -2308,10 +2444,16 @@ export class ClothRenderer extends Renderer {
         this.createTriTriIntersectionPipeline();
     }
 
-    public beginRender() {
-        const renderLoop = () => {
+    public async beginRender() {
+        this.objIdx = 0;
+        const renderLoop = async () => {
             this.statsOn();
-            this.render();
+            if(this.loadClothAnim){
+                this.renderAnimation(this.device);
+            }else{
+                this.render();
+            }
+            
             this.statsEnd();
             if(this.isRunning){
                 requestAnimationFrame(renderLoop);
@@ -2324,6 +2466,150 @@ export class ClothRenderer extends Renderer {
         const clothSize = this.getUserInputClothSize();
         await this.init();
         this.initializeClothSimulation(clothSize[0], clothSize[1]);
+        await this.initializeAnimation(this.device);
         this.beginRender();
+    }
+
+    public async initializeAnimation(device: GPUDevice){
+        this.mvpUniformBuffer = this.device.createBuffer({
+            size: 64 * 3, // The total size needed for the matrices
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST // The buffer is used as a uniform and can be copied to
+        });
+        const bindGroupLayout = device.createBindGroupLayout({
+            entries: [
+                {
+                    binding: 0,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: { type: "uniform" },
+                },
+                {
+                    binding: 1,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    texture: {}
+                },
+                {
+                    binding: 2,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    sampler: {}
+                },
+            ],
+        });
+    
+        this.AnimationbindGroup = device.createBindGroup({
+            layout: bindGroupLayout,
+            entries: [
+                {
+                    binding: 0, 
+                    resource: 
+                    { 
+                        buffer: this.mvpUniformBuffer 
+                    } 
+                },
+                {
+                    binding: 1,
+                    resource: this.view
+                },
+                {
+                    binding: 2,
+                    resource: this.sampler
+                },
+            ]
+        });
+
+        this.AnimationPipelineLayout = device.createPipelineLayout({
+            bindGroupLayouts: [bindGroupLayout]
+        });
+
+        this.objMesh = new ObjMesh(device, new Float32Array([]), new Uint32Array([]), new Float32Array([]));
+    }
+
+    public async renderAnimation( device: GPUDevice) {
+        if(this.objIdx > 90)this.objIdx = 90;
+        let fileName = "../scenes/HatAnimation/hat00"+ (this.objIdx < 10 ? "0" + this.objIdx : this.objIdx) + ".obj";
+        // if(existsSync(fileName)){
+        //     console.log("Does  existed");
+        // }
+        let objLoad = new ObjLoader();
+        let objm : ObjModel = await objLoad.load(fileName);
+        this.objIdx++;
+        this.objMesh.updateBuffer(new Float32Array(objm.vertices), new Uint32Array(objm.indices), new Float32Array(objm.uvs));
+        console.log(objm.uvs);
+        // FPS detector
+        this.stats.begin();
+        // GUI controller
+        this.setCamera(this.camera);
+        //command encoder: records draw commands for submission
+        const commandEncoder : GPUCommandEncoder = device.createCommandEncoder();
+        //texture view: image view to the color buffer in this case
+        const textureView : GPUTextureView = this.context.getCurrentTexture().createView();
+
+        //renderpass: holds draw commands, allocated from command encoder
+        const renderpass = commandEncoder.beginRenderPass({
+            colorAttachments: [{
+                view: textureView,
+                clearValue: {
+                    r: 1,
+                    g: 1,
+                    b: 1,
+                    a: 1.0
+                },
+                loadOp: "clear",
+                storeOp: "store"
+            }]
+        });
+
+        //setup pipeline
+        const pipeline = device.createRenderPipeline({
+            vertex : {
+                module : device.createShaderModule({
+                    code : objSrc
+                }),
+                entryPoint : "vs_main",
+                buffers: [
+                    {
+                        arrayStride: 3 * 4, // Each vertex has 6 floats (x, y, z, r, g, b)
+                        attributes: [
+                            { shaderLocation: 0, offset: 0, format: "float32x3" }, // Position attribute
+                        ],
+                    },
+                    {
+                        arrayStride: 8,
+                        attributes: [
+                            {
+                                shaderLocation: 1,
+                                format: "float32x2",
+                                offset: 0
+                            }
+                        ]
+                    },
+                ],
+            },
+    
+            fragment : {
+                module : device.createShaderModule({
+                    code : objSrc
+                }),
+                entryPoint : "fs_main",
+                targets : [{
+                    format : this.format
+                }]
+            },
+    
+            primitive : {
+                topology : "triangle-list"
+            },
+    
+            layout: this.AnimationPipelineLayout
+        });
+        
+        renderpass.setPipeline(pipeline);
+        renderpass.setVertexBuffer(0, this.objMesh.vertexBuffer);
+        renderpass.setVertexBuffer(1, this.objMesh.uvBuffer);
+        renderpass.setIndexBuffer(this.objMesh.indexBuffer, "uint32");
+        renderpass.setBindGroup(0, this.AnimationbindGroup)
+        renderpass.drawIndexed(this.objMesh.indexCount); // Draw using indices
+        renderpass.end();
+        device.queue.submit([commandEncoder.finish()]);
+        this.stats.end();
     }
 }

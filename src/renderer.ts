@@ -209,14 +209,19 @@ export class Renderer{
                 this.isRunning = true;
                 this.init().then(()=>{
                     if(this instanceof ClothRenderer){
-                        this.initializeClothSimulation(
-                            Math.round(this.renderOptions.clothSizeX),
-                            Math.round(this.renderOptions.clothSizeY),
-                            this.renderOptions.structuralKs,
-                            this.renderOptions.shearKs,
-                            this.renderOptions.bendKs,
-                            this.renderOptions.kd
-                        );
+                        if(this.loadClothAnim){
+                            this.initializeAnimation(this.device);
+                        }else{
+                            this.initializeClothSimulation(
+                                Math.round(this.renderOptions.clothSizeX),
+                                Math.round(this.renderOptions.clothSizeY),
+                                this.renderOptions.structuralKs,
+                                this.renderOptions.shearKs,
+                                this.renderOptions.bendKs,
+                                this.renderOptions.kd
+                            );
+                        }
+                        
                         this.beginRender();
                     }
                 });

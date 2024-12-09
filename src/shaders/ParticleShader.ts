@@ -111,36 +111,6 @@ export class ParticleShader {
     
     @fragment
     fn fs_main(@location(0) TexCoord : vec2<f32>, @location(1) Normal : vec3<f32>, @location(2) FragPos: vec3<f32>) -> @location(0) vec4<f32> {            
-        // let ambientStrength: f32 = 0.001;
-        // let ambientColor: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0) * ambientStrength;
-        // var lightPos: vec3<f32> = lightUBO.position;
-        // let lightColor: vec4<f32> = lightUBO.color;
-        // let lightIntensity: f32 = lightUBO.intensity;
-
-        // let texColor: vec4<f32> = textureSample(myTexture, mySampler, TexCoord);            
-        // let norm: vec3<f32> = normalize(Normal);
-        // let viewDir: vec3<f32> = normalize(cameraPos - FragPos);
-        // var finalColor:vec4<f32> = ambientColor;
-
-        // for(var i=0;i<2;i=i+1){
-        //     if(i==1){
-        //         lightPos = vec3<f32>(0.0, 1.0, 0.0);
-        //     }
-            
-        //     let lightDir: vec3<f32> = normalize(lightPos - FragPos);
-        //     let diff: f32 = max(dot(norm, lightDir), 0.0);
-        //     let diffuse: vec4<f32> = lightColor * texColor * diff * lightIntensity;
-            
-            
-        //     let reflectDir: vec3<f32> = reflect(-lightDir, norm);
-        //     let spec: f32 = pow(max(dot(viewDir, reflectDir), 0.0), lightUBO.shininess);
-        //     let specular: vec4<f32> = lightColor * spec * lightUBO.specularStrength;
-            
-        //     finalColor = finalColor + diffuse + specular;
-        // }
-        
-        // finalColor.a = 0.8;
-        // return finalColor;
 
         let texColor: vec4<f32> = textureSample(myTexture, mySampler, TexCoord);
 
@@ -274,9 +244,9 @@ export class ParticleShader {
         velocities[index*3 + 1] = vel.y;
         velocities[index*3 + 2] = vel.z;
 
-        positions[index*3 + 0] = pos.x;
-        positions[index*3 + 1] = pos.y;
-        positions[index*3 + 2] = pos.z;
+        //positions[index*3 + 0] = pos.x;
+        //positions[index*3 + 1] = pos.y;
+        //positions[index*3 + 2] = pos.z;
     }    
     `;
 
