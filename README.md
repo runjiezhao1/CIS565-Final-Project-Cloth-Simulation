@@ -54,7 +54,7 @@ Because under the force influence, we don't want our cloth to self-intersect. To
 
 ### Milestone Presentation
 [Milestone 1](https://docs.google.com/presentation/d/1k1ChnuoMpLSQxMTS-dWUVtKKRyZDLQiFZErbInyIAtg/edit?usp=sharing)<br />
-[Milestone 2](https://docs.google.com/presentation/d/1sv0X3YxA0IU9tFmVsZB1DE7m33s-xZ-jeRxQN0ryYoc/edit?usp=sharing)
+[Milestone 2](https://docs.google.com/presentation/d/1sv0X3YxA0IU9tFmVsZB1DE7m33s-xZ-jeRxQN0ryYoc/edit?usp=sharing)<br />
 [Milestone 3](https://docs.google.com/presentation/d/1iPj2AqlVhUsPVGc2NFhWof8Bf9a0nz_nUCBRBUU-FCI/edit?usp=sharing)
 
 ## Reference
