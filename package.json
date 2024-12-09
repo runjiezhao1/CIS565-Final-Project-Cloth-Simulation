@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@types/dat.gui": "^0.7.13",
+    "@types/node": "^22.10.1",
     "@types/seedrandom": "^3.0.8",
     "@types/stats.js": "^0.17.3",
     "@webgpu/types": "^0.1.51",
@@ -19,6 +20,7 @@
     "@loaders.gl/gltf": "^4.2.2",
     "@loaders.gl/images": "^4.2.3",
     "dat.gui": "^0.7.9",
+    "fs": "^0.0.1-security",
     "gl-matrix": "^3.4.3",
     "stats-js": "^1.0.1",
     "webgl-obj-loader": "^2.0.8",

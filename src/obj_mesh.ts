@@ -7,9 +7,10 @@ export class ObjMesh {
     vertexBuffer : GPUBuffer;
     indexBuffer : GPUBuffer;
     uvBuffer : GPUBuffer;
-    indexCount: number;
+    normalBuffer : GPUBuffer;
+    indexCount: number = 0;
 
-    constructor(device: GPUDevice, vertices: Float32Array, indices: Uint32Array, uvs : Float32Array) {
+    constructor(device: GPUDevice, vertices: Float32Array, indices: Uint32Array, uvs : Float32Array, normals: Float32Array) {
         this.device = device;
         this.vertexBuffer = device.createBuffer({
             size: vertices.byteLength,
@@ -32,11 +33,19 @@ export class ObjMesh {
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
             mappedAtCreation: true,
         });
-        new Uint32Array(this.uvBuffer.getMappedRange()).set(uvs);
+        new Float32Array(this.uvBuffer.getMappedRange()).set(uvs);
         this.uvBuffer.unmap();
+
+        this.normalBuffer = device.createBuffer({
+            size: normals.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true,
+        });
+        new Float32Array(this.normalBuffer.getMappedRange()).set(normals);
+        this.normalBuffer.unmap();
     }
 
-    updateBuffer(vertices: Float32Array, indices: Uint32Array, uvs: Float32Array){
+    updateBuffer(vertices: Float32Array, indices: Uint32Array, uvs: Float32Array, normals: Float32Array){
         this.vertexBuffer = this.device.createBuffer({
             size: vertices.byteLength,
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -59,7 +68,15 @@ export class ObjMesh {
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
             mappedAtCreation: true,
         });
-        new Uint32Array(this.uvBuffer.getMappedRange()).set(uvs);
+        new Float32Array(this.uvBuffer.getMappedRange()).set(uvs);
         this.uvBuffer.unmap();
+
+        this.normalBuffer = this.device.createBuffer({
+            size: normals.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true,
+        });
+        new Float32Array(this.normalBuffer.getMappedRange()).set(normals);
+        this.normalBuffer.unmap();
     }
 }

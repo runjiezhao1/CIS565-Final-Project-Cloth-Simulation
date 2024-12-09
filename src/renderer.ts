@@ -24,7 +24,7 @@ export class Renderer{
     guiController!: GUIController;
 
     // Light
-    light_position: vec3 = vec3.fromValues(171.0, 500.0, 500.0);
+    light_position: vec3 = vec3.fromValues(0.0, 20.0, 0.0);
     light_color: vec3 = vec3.fromValues(1.0, 1.0, 1.0);
     light_intensity: number = 1.0;
     specular_strength: number = 1.5;
@@ -114,6 +114,7 @@ export class Renderer{
         });
         this.createDepthTexture();
         this.createResolveTexture();
+        console.log("texture created");
     }
 
     setCamera(camera: Camera) {
@@ -205,14 +206,22 @@ export class Renderer{
         // Add button options here:
         var params = {
             loadFile: () => this.guiController.loadFile(),
-            startSimulation: () => {
+            startSimulation: async () => {
                 this.isRunning = true;
-                this.init().then(()=>{
+                this.init().then(async ()=>{
                     if(this instanceof ClothRenderer){
                         if(this.loadClothAnim){
-                            this.initializeAnimation(this.device);
+                            await this.initializeClothSimulation(
+                                Math.round(this.renderOptions.clothSizeX),
+                                Math.round(this.renderOptions.clothSizeY),
+                                this.renderOptions.structuralKs,
+                                this.renderOptions.shearKs,
+                                this.renderOptions.bendKs,
+                                this.renderOptions.kd
+                            );
+                            await this.initializeAnimation(this.device);
                         }else{
-                            this.initializeClothSimulation(
+                            await this.initializeClothSimulation(
                                 Math.round(this.renderOptions.clothSizeX),
                                 Math.round(this.renderOptions.clothSizeY),
                                 this.renderOptions.structuralKs,

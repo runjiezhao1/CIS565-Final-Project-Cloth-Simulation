@@ -104,8 +104,6 @@ export class ObjLoader {
           this.calculateNormals(_model.vertices, _model.indices).forEach(n => _model.normals.push(n));
       }
 
-      console.log("parse end");
-
       return _model;
   }
 

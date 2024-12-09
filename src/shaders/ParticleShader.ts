@@ -140,8 +140,8 @@ export class ParticleShader {
         var finalColor: vec4<f32> = ambientColor + diffuse + specular2;
 
         //return vec4<f32>(1.0,1.0, 1.0, 1.0);
-        return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
-        
+        //return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
+        return vec4<f32>(texColor.x, texColor.y, texColor.z, 1);
         //return vec4<f32>(diffuse.x, diffuse.y, diffuse.z, 1.0);
     }
 

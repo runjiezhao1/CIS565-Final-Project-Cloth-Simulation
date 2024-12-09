@@ -83,13 +83,59 @@ export class ObjectShader {
 
         var finalColor: vec4<f32> = ambientColor + diffuse + specular + vec4<f32>(0.000000, 0.000000, 0.000000, 1.0);        
 
-        return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
-        
+        //return vec4<f32>(finalColor.x,finalColor.y, finalColor.z, 1.0);
+        return vec4<f32>(TexCoord,1,1);
         //return vec4<f32>(diffuse.x, diffuse.y, diffuse.z, 1.0);
     }
     `;
 
     getMaterialShader() {
         return this.materialShader;
+    }
+
+    textureShader = `
+        struct TransformData {
+        model: mat4x4<f32>,
+        view: mat4x4<f32>,
+        projection: mat4x4<f32>,
+        };
+        @group(0) @binding(0) var<uniform> transformUBO: TransformData;
+        @group(0) @binding(1) var myTexture: texture_2d<f32>;
+        @group(0) @binding(2) var mySampler: sampler;
+        struct LightData {
+            position: vec3<f32>,
+            color: vec4<f32>,
+            intensity: f32,
+            specularStrength: f32,
+            shininess: f32,
+        };
+        @binding(3) @group(0) var<uniform> lightUBO: LightData;
+
+
+        struct Fragment {
+            @builtin(position) Position : vec4<f32>,
+            @location(0) TexCoord : vec2<f32>,
+            @location(1) Color : vec4<f32>,
+            
+        };
+
+        @vertex
+        fn vs_main(@location(0) vertexPosition: vec3<f32>, @location(1) vertexTexCoord: vec2<f32>) -> Fragment {
+            var output : Fragment;
+            output.Position = transformUBO.projection * transformUBO.view * transformUBO.model * vec4<f32>(vertexPosition, 1);
+            output.Color = vec4<f32>(normalize(vertexPosition), 1.0);
+            output.TexCoord = vertexTexCoord;
+            return output;
+        }
+
+        @fragment
+        fn fs_main(@location(0) TexCoord: vec2<f32>, @location(1) Color: vec4<f32>) -> @location(0) vec4<f32> {
+            let texColor: vec4<f32> = textureSample(myTexture, mySampler, TexCoord);
+            return vec4<f32>(TexCoord, 1, 1);
+        }
+    `
+
+    getObjTextureShader(){
+        return this.textureShader;
     }
 }
