@@ -5,6 +5,9 @@
 
 ## Project Overview
 This is a real-time webGPU-based cloth simulation project that implements a dry frictional contact model based on the Signorini Coulomb law. This offers an accurate simulation of friction and non-penetrative contact and boosts the simulation efficiency with the help of GPU computing.
+|Final Result|Final Result|Final Result|
+|:-:|:-:|:-:|
+|<img src="img/finalresult.gif" width=250>|<img src="img/hat.gif" width=200>|<img src="img/dres.gif" width=200>|
 
 ## Features
 - WebGPU pipeline
@@ -15,11 +18,11 @@ This is a real-time webGPU-based cloth simulation project that implements a dry 
   - [x]  Edge triangle collision detection
   - [x]  triangle intersection
   - [x]  particle free fall compute
-  - [ ]  Projective-Dynamics-based forward simulation
-  - [ ]  Gradient computation
+  - [x]  Projective-Dynamics-based forward simulation
+  - [x]  Gradient computation
 - Enhanced rendering
-  - [ ]  Texture loading and material rendering
-  - [ ]  Cloth with animation
+  - [x]  Texture loading and material rendering
+  - [x]  Cloth with animation
 
 ## Interaction Guide
 Use mouse's left drag, wheel, and right drag to control the camera <br />
